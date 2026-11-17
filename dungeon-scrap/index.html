@@ -1,0 +1,1838 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DUNGEON SCRAP — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0807;--panel:#131010;--panel2:#1a1414;--panel3:#221a19;--line:#2f2421;--line2:#45332e;
+  --ink:#eee4da;--mute:#8f8077;--dim:#5d514b;
+  --acid:#a6ff3d;--blood:#ff3b47;--gold:#ffc93c;--cyan:#38e8ff;--violet:#b45cff;--pink:#ff2d6f;
+  --qS:#ffd23f;--qA:#79ff6a;--qB:#55b8ff;--qX:#ff4d4d;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --disp:"Bungee",Impact,"Arial Black",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#2a1012 0%,transparent 60%),radial-gradient(900px 500px at 110% 110%,#0d1d22 0%,transparent 60%),var(--bg);color:var(--ink);font:13px/1.35 Inter,system-ui,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.mono{font-family:var(--mono)}
+
+/* ---------- top bar ---------- */
+#topbar{height:54px;display:flex;align-items:center;gap:18px;padding:0 14px;border-bottom:1px solid var(--line);background:linear-gradient(#1a1211,#0e0b0a)}
+.logo{font-family:var(--disp);font-size:22px;letter-spacing:.02em;color:var(--blood);text-shadow:0 0 14px rgba(255,59,71,.55),2px 2px 0 #000;white-space:nowrap}
+.logo b{color:var(--ink);font-weight:400}
+.logo small{display:block;font:600 9px/1 Inter,sans-serif;letter-spacing:.28em;color:var(--mute);text-shadow:none;margin-top:3px}
+.hstat{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hstat span{font-size:9px;letter-spacing:.2em;color:var(--mute);font-weight:800;text-transform:uppercase}
+.hstat b{font-family:var(--mono);font-size:15px;font-weight:800;white-space:nowrap}
+#hMoney{font-size:24px;color:var(--gold);text-shadow:0 0 16px rgba(255,201,60,.45);transition:transform .08s}
+#hMoney.bump{transform:scale(1.12)}
+.spacer{flex:1}
+.tbtn{background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;font-weight:800;font-size:11px;letter-spacing:.08em}
+.tbtn:hover{border-color:var(--acid);color:var(--acid)}
+
+/* ---------- layout ---------- */
+#app{display:grid;grid-template-columns:minmax(440px,1.5fr) minmax(300px,.82fr) minmax(360px,1.02fr);gap:10px;padding:10px;height:calc(100vh - 54px)}
+.pane{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:10px;min-height:0;display:flex;flex-direction:column;overflow:hidden;position:relative;box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.03)}
+.paneHead{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font-weight:900;font-size:11px;letter-spacing:.18em;color:var(--mute);text-transform:uppercase;flex:0 0 auto}
+.paneHead .tag{color:var(--blood)}
+
+/* ---------- table ---------- */
+#tableWrap{position:relative;flex:1;min-height:0}
+#tableCv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;display:block}
+#monTag{display:flex;align-items:center;gap:8px;color:var(--ink);letter-spacing:.06em}
+#monTag .tier{font-family:var(--mono);color:var(--mute)}
+.vbadge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:900;letter-spacing:.12em;color:#000}
+#hud{position:absolute;left:0;right:0;top:16px;pointer-events:none;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start}
+.prog{display:flex;flex-direction:column;gap:5px;width:190px}
+.prog .bar{height:6px;background:#000a;border:1px solid var(--line2);border-radius:4px;overflow:hidden}
+.prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blood),var(--gold));width:0;transition:width .15s}
+.prog .lbl{font-family:var(--mono);font-size:10px;color:var(--mute);display:flex;justify-content:space-between}
+#combo{font-family:var(--disp);font-size:30px;color:var(--gold);text-shadow:0 0 18px rgba(255,201,60,.6),2px 2px 0 #000;opacity:0;transform-origin:right top;transition:opacity .2s;text-align:right;line-height:1}
+#combo small{display:block;font:800 10px/1 var(--mono);letter-spacing:.2em;color:var(--ink);opacity:.8;margin-top:4px}
+#hint{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);pointer-events:none;background:#000c;border:1px solid var(--line2);padding:7px 14px;border-radius:999px;font-weight:800;font-size:12px;letter-spacing:.04em;white-space:nowrap;transition:opacity .3s;color:var(--acid)}
+#haulBtn{position:absolute;right:12px;bottom:12px;background:linear-gradient(#3a1416,#230b0d);border:1px solid #6b2328;color:#ffb3b8;border-radius:8px;padding:9px 14px;font-family:var(--disp);font-size:13px;letter-spacing:.05em}
+#haulBtn:hover{border-color:var(--blood);color:#fff;box-shadow:0 0 18px rgba(255,59,71,.4)}
+#haulBtn.ready{background:linear-gradient(#2d4a12,#18290a);border-color:var(--acid);color:var(--acid);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 22px rgba(166,255,61,.45)}}
+
+/* ---------- middle ---------- */
+#paneMid .scroll{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+.card{background:#0e0b0bcc;border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+.cardHead{display:flex;align-items:center;gap:8px;font-weight:900;font-size:10px;letter-spacing:.2em;color:var(--mute);text-transform:uppercase;margin-bottom:8px}
+.cardHead .r{margin-left:auto;display:flex;gap:5px}
+.mini{background:var(--panel3);border:1px solid var(--line2);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--ink)}
+.mini:hover{border-color:var(--acid);color:var(--acid)}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:11px}
+.statgrid div{display:flex;justify-content:space-between;gap:6px;color:var(--mute)}
+.statgrid b{font-family:var(--mono);color:var(--ink);font-weight:700}
+#relicSlots{display:flex;gap:6px}
+.rslot{flex:1;aspect-ratio:1;max-width:60px;border:1px dashed var(--line2);border-radius:8px;display:grid;place-items:center;font-size:26px;position:relative;background:#0008}
+.rslot.on{border-style:solid;background:radial-gradient(circle,#2a1a2e,#0d0a0e);box-shadow:inset 0 0 14px rgba(180,92,255,.25)}
+.rslot.on.common{border-color:#6c6c7a}.rslot.on.rare{border-color:var(--cyan)}.rslot.on.legendary{border-color:var(--gold);box-shadow:inset 0 0 16px rgba(255,201,60,.3),0 0 10px rgba(255,201,60,.15)}
+.rslot.fire{animation:rfire .45s}
+@keyframes rfire{30%{transform:scale(1.18) rotate(-6deg);filter:brightness(2)}}
+#fridgeZone{transition:box-shadow .15s,border-color .15s}
+#fridgeZone.hot{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(56,232,255,.25),0 0 30px rgba(56,232,255,.2)}
+#fridgeGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
+.fslot{aspect-ratio:1;border:1px dashed #263236;border-radius:7px;background:linear-gradient(#0b1416,#081012)}
+.fitem{aspect-ratio:1;border:1px solid #2b4148;border-radius:7px;background:linear-gradient(#10232a,#0a151a);position:relative;display:grid;place-items:center;cursor:pointer;overflow:hidden;transition:transform .08s}
+.fitem:hover{transform:translateY(-2px);border-color:var(--gold)}
+.fitem .fico{font-size:24px;line-height:1;margin-top:-8px;filter:drop-shadow(0 2px 2px #000)}
+.fitem .fq{position:absolute;left:3px;top:2px;font:900 10px/1 var(--mono)}
+.fitem .fprice{position:absolute;left:0;right:0;bottom:7px;text-align:center;font:700 9.5px/1 var(--mono);color:var(--gold)}
+.fitem .fbar{position:absolute;left:3px;right:3px;bottom:2px;height:3px;background:#000;border-radius:2px;overflow:hidden}
+.fitem .fbar i{display:block;height:100%;background:var(--acid)}
+.fitem.rot{filter:saturate(.3) brightness(.7)}
+.fitem.rot::after{content:"ROT";position:absolute;right:3px;top:2px;font:900 8px/1 var(--mono);color:#9c8f3a}
+.fitem.new{animation:fin .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes fin{from{transform:scale(.2);filter:brightness(3)}}
+.v-golden{box-shadow:inset 0 0 12px rgba(255,204,51,.55);border-color:#a8841f!important}
+.v-crystal{box-shadow:inset 0 0 12px rgba(127,243,255,.55);border-color:#3fa7b5!important}
+.v-cursed{box-shadow:inset 0 0 12px rgba(180,92,255,.6);border-color:#7240a3!important}
+.v-abyssal{box-shadow:inset 0 0 14px rgba(255,45,111,.7);border-color:#a3204d!important;animation:abyss 1.6s infinite}
+@keyframes abyss{50%{box-shadow:inset 0 0 22px rgba(255,45,111,.95)}}
+.qS{color:var(--qS)}.qA{color:var(--qA)}.qB{color:var(--qB)}.qX{color:var(--qX)}
+#quickSell{border:2px dashed #6b2328;border-radius:10px;padding:12px;text-align:center;background:repeating-linear-gradient(-45deg,#1a0b0c 0 10px,#140809 10px 20px);transition:all .15s}
+#quickSell b{font-family:var(--disp);font-size:15px;color:#ff8d94;letter-spacing:.04em}
+#quickSell small{display:block;color:var(--mute);font-size:10px;margin-top:3px}
+#quickSell.hot{border-color:var(--blood);box-shadow:0 0 28px rgba(255,59,71,.4);transform:scale(1.02)}
+#receipt{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:30px;font-family:var(--mono);font-size:11px}
+#receipt .chip{padding:3px 6px;border-radius:4px;background:var(--panel3);border:1px solid var(--line2);animation:chip .3s cubic-bezier(.2,1.8,.4,1) both;white-space:nowrap}
+#receipt .chip.base{background:#1c2a12;border-color:#3d5c1f;color:var(--acid)}
+#receipt .chip.q{color:var(--qS)}
+#receipt .chip.mkt{color:var(--cyan)}
+#receipt .chip.relic{color:#e0b3ff;border-color:#5b3577;background:#1d1224}
+#receipt .chip.bad{color:#ff8d94}
+#receipt .op{color:var(--dim);animation:chip .3s both}
+#receipt .total{font-family:var(--disp);font-size:18px;color:var(--gold);text-shadow:0 0 12px rgba(255,201,60,.5);animation:chip .45s cubic-bezier(.2,1.8,.4,1) both;margin-left:4px}
+#receipt .cnt{color:var(--mute);margin-left:4px}
+@keyframes chip{from{opacity:0;transform:translateY(6px) scale(.6)}}
+
+/* ---------- right ---------- */
+.monitor{flex:0 0 auto;display:flex;flex-direction:column;background:linear-gradient(#071214,#050c0e);border-bottom:1px solid #12323a;position:relative;height:53%;min-height:300px}
+.monitor::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+.monitor .paneHead{color:var(--cyan);border-color:#12323a}
+.live{color:var(--blood);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+#ticker{height:24px;overflow:hidden;white-space:nowrap;background:#000;border-bottom:1px solid #12323a;position:relative;font:700 11px/24px var(--mono);color:var(--gold)}
+#tickerText{display:inline-block;padding-left:100%;animation:marquee 22s linear infinite}
+@keyframes marquee{to{transform:translateX(-100%)}}
+#activeNews{display:flex;gap:5px;flex-wrap:wrap;padding:5px 8px;min-height:30px}
+.nchip{font:700 10px/1 var(--mono);padding:4px 6px;border-radius:4px;border:1px solid;position:relative;overflow:hidden}
+.nchip.up{color:var(--acid);border-color:#3d5c1f;background:#0f1a07}
+.nchip.dn{color:#ff8d94;border-color:#6b2328;background:#1a0809}
+.nchip.rumor{color:var(--violet);border-color:#5b3577;background:#140b1a}
+.nchip i{position:absolute;left:0;bottom:0;height:2px;background:currentColor;opacity:.7}
+#chartBox{position:relative;height:120px;flex:0 0 auto;margin:0 8px}
+#chart{width:100%;height:100%;display:block}
+#chartLbl{position:absolute;left:6px;top:4px;font:700 11px/1.2 var(--mono);color:var(--ink);pointer-events:none;text-shadow:0 1px 2px #000}
+#mktList{overflow:auto;flex:1;min-height:0;padding:4px 6px 6px}
+.mrow{display:grid;grid-template-columns:22px 1fr 58px 26px 64px 58px;gap:5px;align-items:center;padding:4px 5px;border-radius:5px;cursor:pointer;border:1px solid transparent}
+.mrow:hover{background:#0c1d22}
+.mrow.sel{border-color:#1e5361;background:#0b1a1e}
+.mrow .ico{font-size:16px;text-align:center}
+.mrow .nm{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .mul{font:800 11px/1 var(--mono);text-align:right}
+.mrow .arr{font:900 11px/1 var(--mono);text-align:center}
+.mrow .px{font:700 10.5px/1 var(--mono);color:var(--gold);text-align:right}
+.mrow.flash{animation:rowflash .7s}
+@keyframes rowflash{0%{background:#3b2f08}}
+.up{color:var(--acid)}.dn{color:#ff6b74}.flat{color:var(--mute)}
+.sellall{background:#22110f;border:1px solid #5a2a24;border-radius:4px;padding:3px 4px;font:800 9.5px/1 var(--mono);color:#ffb3b8}
+.sellall:disabled{opacity:.3;cursor:default}
+.sellall:not(:disabled):hover{border-color:var(--blood);color:#fff}
+.tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto}
+.tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:8px 2px;font-weight:900;font-size:10px;letter-spacing:.12em;color:var(--mute);position:relative}
+.tabs button.on{color:var(--ink);border-color:var(--blood)}
+.tabs button .dot{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--acid);display:none}
+.tabs button.notify .dot{display:block}
+#tabBody{overflow:auto;flex:1;min-height:0;padding:8px;display:flex;flex-direction:column;gap:6px}
+.ucard{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:#0e0b0b}
+.ucard .uico{font-size:22px;text-align:center}
+.ucard .un{font-weight:800;font-size:12px}
+.ucard .un .lv{font-family:var(--mono);color:var(--mute);font-weight:700;margin-left:4px;font-size:10.5px}
+.ucard .ud{font-size:10.5px;color:var(--mute);margin-top:1px}
+.ucard .uv{font-family:var(--mono);font-size:10.5px;color:var(--cyan);margin-top:2px}
+.buy{min-width:84px;background:linear-gradient(#2a3a10,#18240a);border:1px solid #4d7a1c;border-radius:6px;padding:7px 8px;font:800 11px/1 var(--mono);color:var(--acid)}
+.buy:hover:not(.no){box-shadow:0 0 14px rgba(166,255,61,.35);color:#fff}
+.buy.no{background:#161212;border-color:var(--line2);color:var(--dim);cursor:not-allowed}
+.buy.max{background:#161212;border-color:var(--line2);color:var(--gold);cursor:default}
+.sect{font-weight:900;font-size:10px;letter-spacing:.2em;color:var(--mute);margin:4px 2px 0;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.sect .r{margin-left:auto}
+.rcard{display:grid;grid-template-columns:40px 1fr auto;gap:8px;align-items:center;padding:8px;border-radius:8px;border:1px solid var(--line2);background:radial-gradient(circle at 0 50%,#1c1220,#0e0b0e 70%)}
+.rcard .rico{font-size:28px;text-align:center}
+.rcard .rn{font-weight:900;font-size:12px}
+.rcard .rr{font:800 9px/1 var(--mono);letter-spacing:.15em;margin-left:5px}
+.rr.common{color:#a9a9b8}.rr.rare{color:var(--cyan)}.rr.legendary{color:var(--gold)}
+.rcard .rd{font-size:10.5px;color:var(--mute);margin-top:2px}
+.rcard.legendary{border-color:#7a5d17;box-shadow:inset 0 0 18px rgba(255,201,60,.12)}
+.rcard.rare{border-color:#1e5361}
+.ocard{padding:8px;border:1px solid var(--line2);border-radius:8px;background:#0e0b0b;display:grid;grid-template-columns:36px 1fr auto;gap:8px;align-items:center;position:relative;overflow:hidden}
+.ocard .oico{font-size:24px;text-align:center}
+.ocard .ot{font-weight:800;font-size:12px}
+.ocard .os{font:700 10.5px/1.3 var(--mono);color:var(--mute)}
+.ocard .orw{font:800 11px/1.3 var(--mono);color:var(--gold)}
+.ocard .otime{position:absolute;left:0;bottom:0;height:2px;background:var(--blood)}
+.ocard .ob{display:flex;flex-direction:column;gap:4px}
+.x{background:none;border:1px solid var(--line2);border-radius:4px;color:var(--mute);font-size:10px;padding:3px 5px}
+.codexMon{border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:#0e0b0b}
+.codexMon .ch{font-weight:900;font-size:11px;letter-spacing:.08em;margin-bottom:4px;display:flex;justify-content:space-between}
+.crow{display:grid;grid-template-columns:1fr repeat(5,26px);gap:3px;align-items:center;font-size:11px;margin:2px 0}
+.cc{height:22px;border-radius:4px;display:grid;place-items:center;background:#000;border:1px solid #221b19;font-size:13px}
+.cc.got{border-color:currentColor}
+.cc.lock{color:#332a27;font:900 10px var(--mono)}
+.cbar{height:8px;background:#000;border-radius:5px;overflow:hidden;border:1px solid var(--line2)}
+.cbar i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--pink))}
+
+/* ---------- fx layer ---------- */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+.pop{position:absolute;transform:translate(-50%,-50%);font-weight:900;white-space:nowrap;animation:popup 1.1s cubic-bezier(.2,1.4,.4,1) forwards;text-shadow:0 2px 0 #000,0 0 10px #000}
+@keyframes popup{0%{opacity:0;transform:translate(-50%,-30%) scale(.4)}15%{opacity:1;transform:translate(-50%,-60%) scale(1.15)}30%{transform:translate(-50%,-70%) scale(1)}100%{opacity:0;transform:translate(-50%,-160%) scale(.95)}}
+.pop.scrap{font:800 11px var(--mono);color:#ffe28a;animation-duration:.8s}
+.pop.cash{font:900 16px var(--mono);color:var(--gold)}
+.pop.big{font-family:var(--disp);font-size:42px;color:var(--qS);text-shadow:0 0 24px rgba(255,210,63,.8),3px 3px 0 #000;animation-duration:1.4s}
+.pop.rankA{font-family:var(--disp);font-size:30px;color:var(--qA);text-shadow:0 0 18px rgba(121,255,106,.6),3px 3px 0 #000}
+.pop.rankB{font-family:var(--disp);font-size:26px;color:var(--qB);text-shadow:3px 3px 0 #000}
+.pop.rankX{font-family:var(--disp);font-size:34px;color:var(--qX);text-shadow:0 0 18px rgba(255,77,77,.7),3px 3px 0 #000}
+.pop.perfect{font-family:var(--disp);font-size:52px;background:linear-gradient(90deg,#ffd23f,#fff,#38e8ff,#ff2d6f,#ffd23f);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(3px 3px 0 #000) drop-shadow(0 0 18px rgba(255,210,63,.6));animation:popup 1.6s cubic-bezier(.2,1.4,.4,1) forwards,shine .6s linear infinite}
+@keyframes shine{to{background-position:200% 0}}
+.pop.info{font:900 13px Inter,sans-serif;color:var(--cyan);letter-spacing:.06em}
+.pop.warn{font:900 14px Inter,sans-serif;color:#ff8d94}
+.pop.jack{font-family:var(--disp);font-size:48px;color:var(--gold);text-shadow:0 0 30px rgba(255,201,60,.9),4px 4px 0 #000;animation-duration:1.8s}
+.coin{position:absolute;font-size:18px;filter:drop-shadow(0 0 6px rgba(255,201,60,.8))}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:40;opacity:0}
+#breaking{position:fixed;left:50%;top:62px;transform:translate(-50%,-160%);z-index:60;background:linear-gradient(#2a0d0f,#120506);border:2px solid var(--blood);border-radius:10px;padding:10px 18px;min-width:420px;max-width:80vw;text-align:center;box-shadow:0 10px 50px rgba(255,59,71,.4);transition:transform .45s cubic-bezier(.2,1.5,.4,1),opacity .25s;pointer-events:none;opacity:0}
+#breaking.show{transform:translate(-50%,0);opacity:1}
+#breaking .bk{font-family:var(--disp);color:var(--blood);font-size:12px;letter-spacing:.2em}
+#breaking .bh{font-weight:900;font-size:15px;margin:3px 0}
+#breaking .be{font:800 18px var(--mono)}
+#breaking.rumor{border-color:var(--violet);box-shadow:0 10px 50px rgba(180,92,255,.35)}
+#breaking.rumor .bk{color:var(--violet)}
+#tip{position:fixed;z-index:70;pointer-events:none;background:#0b0909f2;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;max-width:290px;font-size:11.5px;display:none;box-shadow:0 8px 30px #000}
+#tip .tt{font-weight:900;font-size:12.5px;margin-bottom:3px}
+#tip .tl{display:flex;justify-content:space-between;gap:14px;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
+#tip .tl b{color:var(--ink)}
+#tip .tsum{border-top:1px solid var(--line2);margin-top:4px;padding-top:4px;font:900 13px var(--mono);color:var(--gold);display:flex;justify-content:space-between}
+#ghost{position:fixed;z-index:80;pointer-events:none;display:none;transform:translate(-50%,-50%);font-size:40px;filter:drop-shadow(0 6px 10px #000)}
+#ghost .gq{position:absolute;right:-12px;top:-8px;font:900 16px var(--disp);text-shadow:2px 2px 0 #000}
+#ghost .gl{position:absolute;left:50%;top:100%;transform:translateX(-50%);font:800 10px var(--mono);color:var(--gold);white-space:nowrap;text-shadow:0 1px 2px #000}
+.modal{position:fixed;inset:0;background:#000b;z-index:90;display:none;place-items:center}
+.modal.show{display:grid}
+.modal .box{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:18px 22px;max-width:620px;max-height:85vh;overflow:auto;font-size:13px;line-height:1.55}
+.modal h2{font-family:var(--disp);color:var(--blood);margin:0 0 8px;font-weight:400}
+.modal li{margin:4px 0}
+#dev{position:fixed;right:12px;bottom:12px;z-index:85;background:#0b0909f5;border:1px solid var(--acid);border-radius:8px;padding:8px;display:none;flex-direction:column;gap:5px;font:700 11px var(--mono);width:210px}
+#dev.show{display:flex}
+#dev .row{display:flex;gap:4px;flex-wrap:wrap}
+#dev button{background:#1a2410;border:1px solid #3d5c1f;color:var(--acid);border-radius:4px;padding:3px 6px;font:700 10px var(--mono)}
+@media (max-width:1150px){
+  body{overflow:auto}
+  #app{grid-template-columns:1fr;height:auto}
+  #paneTable{height:70vh}
+  #paneMid,#paneRight{max-height:none}
+  .monitor{height:auto}
+  #mktList{max-height:300px}
+}
+</style>
+</head>
+<body>
+<header id="topbar">
+  <div class="logo">DUNGEON <b>SCRAP</b><small data-t="subtitle">DISSECTION &amp; BLACK MARKET</small></div>
+  <div class="hstat"><span data-t="cash">Cash</span><b id="hMoney">$0</b></div>
+  <div class="hstat"><span data-t="perMin">$ / min</span><b id="hPerMin">$0</b></div>
+  <div class="hstat"><span data-t="lifetime">Lifetime</span><b id="hLife">$0</b></div>
+  <div class="hstat"><span data-t="globalMult">Global ×</span><b id="hGlobal" style="color:var(--violet)">×1.00</b></div>
+  <div class="spacer"></div>
+  <button class="tbtn" id="btnHelp">? HOW TO</button>
+  <button class="tbtn" id="btnLang">日本語</button>
+  <button class="tbtn" id="btnSound">🔊</button>
+  <button class="tbtn" id="btnDev">DEV</button>
+</header>
+
+<main id="app">
+  <!-- LEFT: dissection table -->
+  <section class="pane" id="paneTable">
+    <div class="paneHead"><span class="tag" data-t="table">Butcher Table</span><span id="monTag"></span></div>
+    <div id="tableWrap">
+      <canvas id="tableCv"></canvas>
+      <div id="hud">
+        <div class="prog">
+          <div class="lbl"><span data-t="plates">PLATES</span><span id="pPlates">0%</span></div>
+          <div class="bar"><i id="barPlates"></i></div>
+          <div class="lbl"><span data-t="parts">PARTS</span><span id="pParts">0/0</span></div>
+        </div>
+        <div id="combo">×0<small>COMBO</small></div>
+      </div>
+      <div id="hint"></div>
+      <button id="haulBtn">HAUL OUT ▶</button>
+    </div>
+  </section>
+
+  <!-- MIDDLE: storage & status -->
+  <section class="pane" id="paneMid">
+    <div class="paneHead"><span data-t="workshop">Workshop</span></div>
+    <div class="scroll">
+      <div class="card">
+        <div class="cardHead" data-t="toolReadout">Tool Readout</div>
+        <div class="statgrid" id="toolStats"></div>
+      </div>
+      <div class="card">
+        <div class="cardHead"><span data-t="relics">Dark Relics</span><span id="relicCount" class="mono"></span></div>
+        <div id="relicSlots"></div>
+      </div>
+      <div class="card" id="fridgeZone">
+        <div class="cardHead"><span data-t="storage">Cold Storage</span><span id="fridgeCount" class="mono"></span>
+          <span class="r"><button class="mini" id="btnSort" data-t="sort">SORT</button><button class="mini" id="btnSellRot" data-t="sellRot">SELL ROT</button><button class="mini" id="btnSellAll" data-t="sellEverything">SELL ALL</button></span></div>
+        <div id="fridgeGrid"></div>
+      </div>
+      <div id="quickSell"><b data-t="quickSell">💰 FENCE — QUICK SELL</b><small data-t="quickSellSub">drag a fresh part here to cash out instantly</small></div>
+      <div class="card">
+        <div class="cardHead" data-t="lastDeal">Last Deal</div>
+        <div id="receipt"><span style="color:var(--dim)">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT: market & shop -->
+  <section class="pane" id="paneRight">
+    <div class="monitor">
+      <div class="paneHead"><span class="live">●</span><span data-t="market">Black Market Monitor</span><span class="mono" style="margin-left:auto;color:var(--dim)" id="mktClock"></span></div>
+      <div id="ticker"><span id="tickerText"></span></div>
+      <div id="activeNews"></div>
+      <div id="chartBox"><canvas id="chart"></canvas><div id="chartLbl"></div></div>
+      <div id="mktList"></div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button data-tab="tool"><span data-t="tabTools">TOOLS</span><i class="dot"></i></button>
+      <button data-tab="facility"><span data-t="tabFacility">FACILITY</span><i class="dot"></i></button>
+      <button data-tab="relic"><span data-t="tabRelics">RELICS</span><i class="dot"></i></button>
+      <button data-tab="orders"><span data-t="tabOrders">ORDERS</span><i class="dot"></i></button>
+      <button data-tab="codex"><span data-t="tabCodex">CODEX</span><i class="dot"></i></button>
+    </div>
+    <div id="tabBody"></div>
+  </section>
+</main>
+
+<div id="fx"></div>
+<div id="flash"></div>
+<div id="breaking"><div class="bk"></div><div class="bh"></div><div class="be"></div></div>
+<div id="tip"></div>
+<div id="ghost"><span class="gi"></span><span class="gq"></span><span class="gl"></span></div>
+<div class="modal" id="help"><div class="box" id="helpBox"></div></div>
+<div id="dev">
+  <div style="color:var(--acid)">DEV / BALANCE PANEL</div>
+  <div class="row"><button data-dev="money">+CASH ×10</button><button data-dev="dock">DOCK +1</button><button data-dev="news">FORCE NEWS</button></div>
+  <div class="row"><button data-dev="variant">NEXT=VARIANT</button><button data-dev="relic">FREE RELIC</button><button data-dev="fill">FILL FRIDGE</button></div>
+  <div class="row">SPEED <button data-dev="ts1">×1</button><button data-dev="ts3">×3</button><button data-dev="ts10">×10</button></div>
+  <div class="row"><button data-dev="reset" style="border-color:var(--blood);color:var(--blood);background:#240b0d">WIPE SAVE</button></div>
+  <div id="devInfo" style="color:var(--mute);font-size:10px"></div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   DUNGEON SCRAP — HTML5 prototype
+   ---------------------------------------------------------------------
+   SECTION 1 : DATA  (pure data — port 1:1 to UE5 DataTables / PrimaryDataAssets)
+     BAL        → UDeveloperSettings / DT_Balance (single row)
+     QUALITY    → DT_Quality        (row = grade)
+     VARIANTS   → DT_Variant        (row = mutation)
+     PARTS      → DT_Part           (row = part type)
+     MONSTERS   → DT_Monster        (row = monster; Body/Parts are TArray<struct>)
+     UPGRADES   → DT_Upgrade        (Effect = {Stat, Op, Value})
+     RELICS     → DT_Relic          (Effects = TArray<FRelicEffect>{Type, params})
+     NEWS       → DT_NewsEvent      (Target = {All, Tags, Parts, Monsters})
+     STR        → StringTable (en/ja)
+   SECTION 2 : STATE (save-game struct)      → USaveGame
+   SECTION 3 : SYSTEMS (stats/economy/market/news/orders/codex/relics)
+   SECTION 4 : TABLE (dissection sim + canvas rendering) → ADissectionTable actor
+   SECTION 5 : UI
+   SECTION 6 : AUDIO (procedural WebAudio → MetaSounds)
+   SECTION 7 : LOOP / SAVE / INPUT
+   ===================================================================== */
+
+/* ============================ 1. DATA ============================ */
+const BAL = {
+  refSize: 600,            // reference table px; all px-tuning scales with actual size
+  brushBase: 16,           // scraper radius px
+  scrapePerPx: 0.085,      // plate damage per px of brush travel (×blade)
+  scrapeIdle: 1.6,         // plate damage per second when holding still (×blade)
+  nickPerDmg: 9,           // % tendon stress added to an exposed part per (damage / plateHp)
+  pullDist: 0.19,          // distance to rip a part free, fraction of monster area
+  safeSpeed: 300,          // px/s pull speed that causes zero stress
+  stressRate: 220,         // stress %/s × (overspeed / safeSpeed)^stressPow
+  stressPow: 1.4,          // >1 = flicks/yanks are punished much harder than slight overspeed
+  gradeS: 30, gradeA: 60, gradeB: 100,   // stress thresholds; ≥100 = torn (Broken)
+  perfectMult: 1.35,       // extra multiplier on top of S for PERFECT
+  perfectTimeFactor: 2.4,  // PERFECT if pull time ≤ ideal time × this
+  fridgeBase: 6, relicSlotsBase: 3,
+  comboWindow: 1.4, comboStep: 0.05, comboCap: 30,
+  marketTick: 1.5, marketHist: 120, marketRevert: 0.10, marketMin: 0.15, marketMax: 40,
+  newsMin: 30, newsMax: 52, newsLeak: 12,
+  orderCount: 3, orderTime: 300, orderRewardMult: 4.5, orderRelicChance: 0.22,
+  codexBonus: 0.02,        // +2% global per codex entry
+  droneDpsPerLvl: 1.5, droneRadius: 0.07, droneSpeed: 0.9,
+  pickerBaseDelay: 14,     // seconds / picker level
+  relicCost: { common: 250, rare: 1200, legendary: 6000 },
+  relicWeight: { common: 60, rare: 30, legendary: 10 },
+  relicScaleDiv: 2500, relicScalePow: 0.8, rerollBase: 60, relicRefund: 0.4,
+  freshFloor: 0.35, rottenMult: 0.1,
+  fullStripBonus: 3,       // ×scrap×cells bonus when ≥95% of plates stripped
+  autosaveSec: 10,
+};
+
+const QUALITY = {
+  S: { label: 'S', mult: 1.5,  color: '#ffd23f', rank: 3 },
+  A: { label: 'A', mult: 1.0,  color: '#79ff6a', rank: 2 },
+  B: { label: 'B', mult: 0.6,  color: '#55b8ff', rank: 1 },
+  X: { label: '✖', mult: 0.15, color: '#ff4d4d', rank: 0, name: { en: 'BROKEN', ja: '破損' } },
+};
+
+const VARIANTS = {
+  normal:  { name: { en: 'Normal',  ja: '通常' }, mult: 1,  chance: 0,     color: null,      decay: 1 },
+  golden:  { name: { en: 'Golden',  ja: '黄金' }, mult: 4,  chance: 0.05,  color: '#ffcc33', decay: 1 },
+  crystal: { name: { en: 'Crystal', ja: '水晶' }, mult: 7,  chance: 0.025, color: '#7ff3ff', decay: 0.5 },
+  cursed:  { name: { en: 'Cursed',  ja: '呪い' }, mult: 3,  chance: 0.04,  color: '#b45cff', decay: 2.5 },
+  abyssal: { name: { en: 'Abyssal', ja: '深淵' }, mult: 30, chance: 0.006, color: '#ff2d6f', decay: 1 },
+};
+const VARIANT_ORDER = ['normal', 'golden', 'crystal', 'cursed', 'abyssal'];
+
+const TAGS = {
+  gel: { en: 'Gel', ja: 'ゲル' }, mana: { en: 'Mana', ja: '魔力' }, organ: { en: 'Organ', ja: '臓器' },
+  bone: { en: 'Bone', ja: '骨' }, silk: { en: 'Silk', ja: '糸' }, toxin: { en: 'Toxin', ja: '毒' },
+  scale: { en: 'Scale', ja: '鱗' }, soul: { en: 'Soul', ja: '魂' },
+};
+
+// decay = freshness %/sec lost. vol = market volatility.
+const PARTS = {
+  slime_gel:       { monster: 'slime',     icon: '💧', base: 3,      decay: 0.45, vol: 0.035, tags: ['gel'],           name: { en: 'Slime Gel',        ja: 'スライムゲル' } },
+  slime_core:      { monster: 'slime',     icon: '🟢', base: 9,      decay: 0.12, vol: 0.03,  tags: ['mana'],          name: { en: 'Slime Core',       ja: 'スライム核' } },
+  goblin_ear:      { monster: 'goblin',    icon: '👂', base: 22,     decay: 0.5,  vol: 0.035, tags: ['organ'],         name: { en: 'Goblin Ear',       ja: 'ゴブリンの耳' } },
+  goblin_tooth:    { monster: 'goblin',    icon: '🦷', base: 38,     decay: 0.02, vol: 0.025, tags: ['bone'],          name: { en: 'Goblin Fang',      ja: 'ゴブリンの牙' } },
+  goblin_heart:    { monster: 'goblin',    icon: '❤️', base: 85,     decay: 0.6,  vol: 0.04,  tags: ['organ'],         name: { en: 'Goblin Heart',     ja: 'ゴブリンの心臓' } },
+  spider_silk:     { monster: 'spider',    icon: '🧶', base: 160,    decay: 0.05, vol: 0.03,  tags: ['silk'],          name: { en: 'Silk Sac',         ja: '糸袋' } },
+  venom_gland:     { monster: 'spider',    icon: '🧪', base: 240,    decay: 0.55, vol: 0.05,  tags: ['toxin'],         name: { en: 'Venom Gland',      ja: '猛毒腺' } },
+  spider_eye:      { monster: 'spider',    icon: '👁️', base: 330,    decay: 0.4,  vol: 0.04,  tags: ['organ'],         name: { en: 'Cluster Eye',      ja: '複眼' } },
+  gargoyle_horn:   { monster: 'gargoyle',  icon: '🪨', base: 700,    decay: 0.01, vol: 0.025, tags: ['bone'],          name: { en: 'Stone Horn',       ja: '石の角' } },
+  gargoyle_heart:  { monster: 'gargoyle',  icon: '🫀', base: 2600,   decay: 0.1,  vol: 0.035, tags: ['organ', 'mana'], name: { en: 'Stone Heart',      ja: '石の心臓' } },
+  mana_stone:      { monster: 'gargoyle',  icon: '💎', base: 1400,   decay: 0.0,  vol: 0.03,  tags: ['mana'],          name: { en: 'Mana Stone',       ja: '魔石' } },
+  wyvern_scale:    { monster: 'wyvern',    icon: '🛡️', base: 8500,   decay: 0.03, vol: 0.03,  tags: ['scale'],         name: { en: 'Wyvern Scale',     ja: 'ワイバーンの鱗' } },
+  wyvern_venom:    { monster: 'wyvern',    icon: '☠️', base: 15000,  decay: 0.6,  vol: 0.05,  tags: ['toxin'],         name: { en: 'Wyvern Venom Sac', ja: 'ワイバーン毒袋' } },
+  wyvern_heart:    { monster: 'wyvern',    icon: '❤️‍🔥', base: 24000,  decay: 0.55, vol: 0.04,  tags: ['organ'],         name: { en: 'Wyvern Heart',     ja: 'ワイバーンの心臓' } },
+  lich_marrow:     { monster: 'lich',      icon: '🦴', base: 85e3,   decay: 0.02, vol: 0.03,  tags: ['bone'],          name: { en: 'Lich Marrow',      ja: 'リッチの骨髄' } },
+  soul_gem:        { monster: 'lich',      icon: '💠', base: 130e3,  decay: 0.08, vol: 0.05,  tags: ['soul'],          name: { en: 'Soul Gem',         ja: '魂の宝石' } },
+  phylactery:      { monster: 'lich',      icon: '⚱️', base: 210e3,  decay: 0.03, vol: 0.045, tags: ['soul'],          name: { en: 'Phylactery Shard', ja: '経箱の欠片' } },
+  dragon_scale:    { monster: 'dragon',    icon: '🐉', base: 750e3,  decay: 0.02, vol: 0.03,  tags: ['scale'],         name: { en: 'Elder Scale',      ja: '古竜の鱗' } },
+  dragon_pearl:    { monster: 'dragon',    icon: '🔮', base: 1.9e6,  decay: 0.01, vol: 0.035, tags: ['mana'],          name: { en: 'Dragon Pearl',     ja: '竜珠' } },
+  dragon_heart:    { monster: 'dragon',    icon: '🔥', base: 3.2e6,  decay: 0.5,  vol: 0.045, tags: ['organ'],         name: { en: 'Dragon Heart',     ja: '竜の心臓' } },
+  void_ink:        { monster: 'leviathan', icon: '🦑', base: 18e6,   decay: 0.6,  vol: 0.06,  tags: ['toxin'],         name: { en: 'Void Ink',         ja: '虚無の墨' } },
+  abyss_pearl:     { monster: 'leviathan', icon: '⚫', base: 40e6,   decay: 0.01, vol: 0.04,  tags: ['mana'],          name: { en: 'Abyss Pearl',      ja: '深淵真珠' } },
+  leviathan_heart: { monster: 'leviathan', icon: '🌀', base: 65e6,   decay: 0.5,  vol: 0.05,  tags: ['organ'],         name: { en: 'Leviathan Heart',  ja: 'リヴァイアサンの心臓' } },
+};
+
+// Body = ellipses in normalized 0..1 space (x,y,rx,ry,rot). Parts placed in same space.
+// layers: outer → inner; hp = plateHp × layer.hp. scrap = cash per broken plate layer.
+const MONSTERS = [
+  { id: 'slime', tier: 1, dock: 0, emoji: '🟢', name: { en: 'Slime', ja: 'スライム' }, grid: 14, plateHp: 5, scrap: 0.08,
+    layers: [{ name: { en: 'Gel Membrane', ja: 'ゲル膜' }, color: '#3fbf5a', hp: 1 }],
+    body: [{ x: .5, y: .62, rx: .36, ry: .26 }, { x: .5, y: .46, rx: .25, ry: .22 }],
+    eyes: [[.42, .45, .035], [.58, .45, .035]],
+    parts: [{ part: 'slime_gel', x: .33, y: .66, r: .06 }, { part: 'slime_gel', x: .67, y: .66, r: .06 }, { part: 'slime_core', x: .5, y: .58, r: .075 }] },
+  { id: 'goblin', tier: 2, dock: 1, emoji: '👺', name: { en: 'Goblin', ja: 'ゴブリン' }, grid: 16, plateHp: 16, scrap: 0.4,
+    layers: [{ name: { en: 'Leather Hide', ja: '革の皮膚' }, color: '#6f8f3a', hp: 1 }],
+    body: [{ x: .5, y: .27, rx: .17, ry: .15 }, { x: .5, y: .62, rx: .2, ry: .23 }, { x: .27, y: .6, rx: .07, ry: .18, rot: .25 }, { x: .73, y: .6, rx: .07, ry: .18, rot: -.25 }, { x: .29, y: .2, rx: .09, ry: .045, rot: -.35 }, { x: .71, y: .2, rx: .09, ry: .045, rot: .35 }],
+    eyes: [[.44, .25, .03], [.56, .25, .03]],
+    parts: [{ part: 'goblin_ear', x: .27, y: .2, r: .045 }, { part: 'goblin_ear', x: .73, y: .2, r: .045 }, { part: 'goblin_tooth', x: .5, y: .35, r: .045 }, { part: 'goblin_heart', x: .46, y: .58, r: .07 }] },
+  { id: 'spider', tier: 3, dock: 2, emoji: '🕷️', name: { en: 'Cave Spider', ja: '洞窟グモ' }, grid: 18, plateHp: 45, scrap: 2,
+    layers: [{ name: { en: 'Chitin', ja: 'キチン殻' }, color: '#4a3b5c', hp: 1 }],
+    body: [{ x: .5, y: .64, rx: .2, ry: .19 }, { x: .5, y: .37, rx: .13, ry: .12 },
+      { x: .24, y: .45, rx: .16, ry: .03, rot: -.5 }, { x: .76, y: .45, rx: .16, ry: .03, rot: .5 }, { x: .22, y: .62, rx: .17, ry: .03, rot: .15 }, { x: .78, y: .62, rx: .17, ry: .03, rot: -.15 },
+      { x: .26, y: .78, rx: .15, ry: .03, rot: .6 }, { x: .74, y: .78, rx: .15, ry: .03, rot: -.6 }],
+    eyes: [[.45, .33, .022], [.55, .33, .022], [.48, .29, .015], [.52, .29, .015]],
+    parts: [{ part: 'spider_eye', x: .5, y: .36, r: .055 }, { part: 'venom_gland', x: .41, y: .5, r: .05 }, { part: 'venom_gland', x: .59, y: .5, r: .05 }, { part: 'spider_silk', x: .5, y: .7, r: .07 }] },
+  { id: 'gargoyle', tier: 4, dock: 3, emoji: '🗿', name: { en: 'Gargoyle', ja: 'ガーゴイル' }, grid: 18, plateHp: 150, scrap: 12,
+    layers: [{ name: { en: 'Stone Shell', ja: '石の外殻' }, color: '#7d7a72', hp: 1.6 }, { name: { en: 'Grey Hide', ja: '灰色の皮' }, color: '#5a4d52', hp: 1 }],
+    body: [{ x: .5, y: .58, rx: .19, ry: .24 }, { x: .5, y: .26, rx: .13, ry: .12 }, { x: .25, y: .44, rx: .18, ry: .1, rot: .45 }, { x: .75, y: .44, rx: .18, ry: .1, rot: -.45 }, { x: .43, y: .13, rx: .03, ry: .07, rot: -.3 }, { x: .57, y: .13, rx: .03, ry: .07, rot: .3 }],
+    eyes: [[.45, .25, .028], [.55, .25, .028]],
+    parts: [{ part: 'gargoyle_horn', x: .43, y: .13, r: .04 }, { part: 'gargoyle_horn', x: .57, y: .13, r: .04 }, { part: 'gargoyle_heart', x: .5, y: .5, r: .075 }, { part: 'mana_stone', x: .5, y: .7, r: .065 }] },
+  { id: 'wyvern', tier: 5, dock: 4, emoji: '🐲', name: { en: 'Wyvern', ja: 'ワイバーン' }, grid: 20, plateHp: 500, scrap: 80,
+    layers: [{ name: { en: 'Scale Mail', ja: '鱗の装甲' }, color: '#2f7a6b', hp: 1.4 }, { name: { en: 'Hide', ja: '皮膚' }, color: '#7a5a3a', hp: 1 }],
+    body: [{ x: .5, y: .56, rx: .17, ry: .19 }, { x: .5, y: .33, rx: .06, ry: .12 }, { x: .5, y: .18, rx: .1, ry: .07 }, { x: .23, y: .46, rx: .22, ry: .1, rot: .3 }, { x: .77, y: .46, rx: .22, ry: .1, rot: -.3 }, { x: .62, y: .82, rx: .05, ry: .14, rot: -.6 }],
+    eyes: [[.46, .17, .022], [.54, .17, .022]],
+    parts: [{ part: 'wyvern_scale', x: .28, y: .46, r: .055 }, { part: 'wyvern_scale', x: .72, y: .46, r: .055 }, { part: 'wyvern_venom', x: .5, y: .21, r: .045 }, { part: 'wyvern_heart', x: .5, y: .56, r: .075 }] },
+  { id: 'lich', tier: 6, dock: 5, emoji: '💀', name: { en: 'Lich', ja: 'リッチ' }, grid: 20, plateHp: 1700, scrap: 600,
+    layers: [{ name: { en: 'Bone Ward', ja: '骨の結界' }, color: '#cfc6a8', hp: 1.5 }, { name: { en: 'Rotten Robe', ja: '朽ちた法衣' }, color: '#3b2f55', hp: 1 }],
+    body: [{ x: .5, y: .62, rx: .2, ry: .27 }, { x: .5, y: .23, rx: .12, ry: .12 }, { x: .3, y: .52, rx: .05, ry: .17, rot: .3 }, { x: .7, y: .52, rx: .05, ry: .17, rot: -.3 }],
+    eyes: [[.45, .22, .03], [.55, .22, .03]],
+    parts: [{ part: 'soul_gem', x: .5, y: .25, r: .055 }, { part: 'phylactery', x: .5, y: .54, r: .07 }, { part: 'lich_marrow', x: .3, y: .58, r: .045 }, { part: 'lich_marrow', x: .7, y: .58, r: .045 }] },
+  { id: 'dragon', tier: 7, dock: 6, emoji: '🐉', name: { en: 'Elder Dragon', ja: 'エルダードラゴン' }, grid: 22, plateHp: 6000, scrap: 5000,
+    layers: [{ name: { en: 'Dragonscale', ja: '竜鱗' }, color: '#a3322a', hp: 2 }, { name: { en: 'Molten Hide', ja: '灼熱の皮膚' }, color: '#5e2a1a', hp: 1 }],
+    body: [{ x: .52, y: .58, rx: .23, ry: .19 }, { x: .42, y: .33, rx: .06, ry: .13, rot: .35 }, { x: .35, y: .18, rx: .12, ry: .07, rot: -.1 }, { x: .2, y: .43, rx: .19, ry: .13, rot: .5 }, { x: .8, y: .43, rx: .19, ry: .13, rot: -.5 }, { x: .74, y: .82, rx: .06, ry: .15, rot: -.8 }],
+    eyes: [[.31, .16, .022], [.39, .15, .022]],
+    parts: [{ part: 'dragon_scale', x: .22, y: .43, r: .05 }, { part: 'dragon_scale', x: .78, y: .43, r: .05 }, { part: 'dragon_pearl', x: .35, y: .2, r: .045 }, { part: 'dragon_heart', x: .52, y: .58, r: .08 }] },
+  { id: 'leviathan', tier: 8, dock: 7, emoji: '🦑', name: { en: 'Void Leviathan', ja: '虚無のリヴァイアサン' }, grid: 22, plateHp: 22000, scrap: 60000,
+    layers: [{ name: { en: 'Abyssal Plate', ja: '深淵装甲' }, color: '#1d2b4f', hp: 2.2 }, { name: { en: 'Mantle', ja: '外套膜' }, color: '#4b2a66', hp: 1.2 }, { name: { en: 'Slick Flesh', ja: 'ぬめる肉' }, color: '#7a3555', hp: 1 }],
+    body: [{ x: .5, y: .38, rx: .24, ry: .24 }, { x: .3, y: .74, rx: .045, ry: .19, rot: .3 }, { x: .43, y: .78, rx: .045, ry: .19, rot: .1 }, { x: .57, y: .78, rx: .045, ry: .19, rot: -.1 }, { x: .7, y: .74, rx: .045, ry: .19, rot: -.3 }],
+    eyes: [[.4, .34, .045], [.6, .34, .045]],
+    parts: [{ part: 'abyss_pearl', x: .5, y: .24, r: .055 }, { part: 'leviathan_heart', x: .5, y: .44, r: .08 }, { part: 'void_ink', x: .5, y: .6, r: .055 }] },
+];
+
+// Effect op: 'mul' → stat *= v^lvl ; 'add' → stat += v*lvl
+const UPGRADES = [
+  { id: 'blade',   cat: 'tool', icon: '🔪', base: 15,  growth: 1.55, max: 60, eff: { stat: 'blade', op: 'mul', v: 1.25 },
+    name: { en: 'Serrated Blade', ja: 'ギザ刃ナイフ' }, desc: { en: 'Scrape damage ×1.25 per level.', ja: '剥離ダメージ　レベル毎×1.25' } },
+  { id: 'brush',   cat: 'tool', icon: '🧹', base: 60,  growth: 2.3,  max: 8,  eff: { stat: 'brush', op: 'add', v: 4 },
+    name: { en: 'Wide Scraper', ja: 'ワイドスクレーパー' }, desc: { en: 'Bigger scraping radius — strip several plates per stroke.', ja: '剥離範囲拡大。一度に複数枚剥がせる' } },
+  { id: 'gloves',  cat: 'tool', icon: '🧤', base: 40,  growth: 1.8,  max: 15, eff: { stat: 'safeSpeed', op: 'mul', v: 1.12 },
+    name: { en: "Surgeon's Gloves", ja: '外科用グローブ' }, desc: { en: 'Safe pull speed ×1.12 per level (faster clean pulls).', ja: '安全な引き抜き速度　レベル毎×1.12' } },
+  { id: 'forceps', cat: 'tool', icon: '✂️', base: 100, growth: 2.0,  max: 10, eff: { stat: 'stressMult', op: 'mul', v: 0.92 },
+    name: { en: 'Hooked Forceps', ja: '鉤付き鉗子' }, desc: { en: 'Tendon stress builds 8% slower per level (S-rank is easier).', ja: '腱ストレス蓄積 レベル毎-8%（Sランク判定緩和）' } },
+  { id: 'fridge',  cat: 'facility', icon: '🧊', base: 80, growth: 2.1, max: 12, eff: { stat: 'fridgeSlots', op: 'add', v: 2 },
+    name: { en: 'Cold Storage Racks', ja: '冷蔵ラック増設' }, desc: { en: '+2 storage slots.', ja: '保管スロット+2' } },
+  { id: 'cooling', cat: 'facility', icon: '❄️', base: 120, growth: 1.9, max: 15, eff: { stat: 'decayMult', op: 'mul', v: 0.85 },
+    name: { en: 'Cryo Coils', ja: '冷却コイル' }, desc: { en: 'Freshness decay ×0.85 per level.', ja: '鮮度低下　レベル毎×0.85' } },
+  { id: 'drone',   cat: 'facility', icon: '🛸', base: 300, growth: 1.85, max: 25, eff: { stat: 'droneLvl', op: 'add', v: 1 },
+    name: { en: 'Scrap Drone', ja: '自動解体ドローン' }, desc: { en: 'A drone strips plates on its own. Scales with your blade.', ja: 'ドローンが自動で外皮を剥がす（ナイフ性能に比例）' } },
+  { id: 'picker',  cat: 'facility', icon: '🦾', base: 2000, growth: 2.6, max: 6, eff: { stat: 'pickerLvl', op: 'add', v: 1 },
+    name: { en: 'Auto-Picker Arm', ja: '自動摘出アーム' }, desc: { en: 'Auto-extracts exposed parts (max A-rank). Faster per level.', ja: '露出パーツを自動摘出（最高Aランク）' } },
+  { id: 'dock',    cat: 'facility', icon: '🚚', costs: [120, 1500, 15000, 180000, 2.5e6, 4e7, 8e8], max: 7, eff: { stat: 'dock', op: 'add', v: 1 },
+    name: { en: 'Loading Dock License', ja: '搬入ライセンス' }, desc: { en: 'Unlocks bigger, richer monsters.', ja: 'より大型で高価なモンスターを解禁' } },
+  { id: 'altar',   cat: 'facility', icon: '🕯️', costs: [8000, 400000], max: 2, eff: { stat: 'relicSlots', op: 'add', v: 1 },
+    name: { en: 'Dark Altar', ja: '闇の祭壇' }, desc: { en: '+1 relic slot.', ja: '遺物スロット+1' } },
+];
+
+// Relic effect types (→ UE5 enum ERelicEffect):
+//  stat{stat,op,v}            passive stat modifier
+//  sale_*                     multiplier evaluated inside salePrice()
+//  on_*                       trigger fired by an event (sell / extract / perfect)
+const RELICS = [
+  { id: 'miser_tooth', icon: '🦷', rarity: 'common', effects: [{ type: 'on_sell_perma_part', v: 0.03 }],
+    name: { en: "Miser's Tooth", ja: '守銭奴の歯' }, desc: { en: "Every sale permanently raises that part's base price by +3%.", ja: '売るたび、そのパーツの基本価格が永続+3%' } },
+  { id: 'twin_fetus', icon: '🫙', rarity: 'rare', effects: [{ type: 'on_extract_split', chance: 0.12, minQ: 'S' }],
+    name: { en: 'Twin Fetus Jar', ja: '双子胎児の瓶' }, desc: { en: 'S-rank extractions have a 12% chance to split into 2 parts.', ja: 'Sランク摘出時、12%でパーツが2つに分裂' } },
+  { id: 'frost_heart', icon: '🧊', rarity: 'common', effects: [{ type: 'stat', stat: 'decayMult', op: 'mul', v: 0.5 }],
+    name: { en: 'Frostbitten Heart', ja: '凍てついた心臓' }, desc: { en: 'Freshness decays 50% slower.', ja: '鮮度低下が50%遅くなる' } },
+  { id: 'hoarder', icon: '📒', rarity: 'common', effects: [{ type: 'sale_per_stored', v: 0.04 }],
+    name: { en: "Hoarder's Ledger", ja: '溜め込み屋の帳簿' }, desc: { en: '+4% sale price for every part currently in storage.', ja: '保管中のパーツ1個につき売値+4%' } },
+  { id: 'blood_contract', icon: '📜', rarity: 'common', effects: [{ type: 'sale_quick', v: 1.75 }],
+    name: { en: 'Blood Contract', ja: '血の契約書' }, desc: { en: 'Quick-selling to the Fence pays +75%.', ja: '即売却の売値+75%' } },
+  { id: 'plague_coin', icon: '🪙', rarity: 'common', effects: [{ type: 'sale_broken_as', q: 'A' }],
+    name: { en: 'Plague Coin', ja: '疫病の硬貨' }, desc: { en: 'Broken parts sell as if they were A-rank.', ja: '破損パーツをAランクとして売却' } },
+  { id: 'metronome', icon: '⏱️', rarity: 'rare', effects: [{ type: 'sale_streak', v: 0.15 }],
+    name: { en: "Butcher's Metronome", ja: '肉屋のメトロノーム' }, desc: { en: 'Each consecutive S-rank pull adds +15% to ALL sales. Resets on a non-S pull.', ja: 'S連続摘出1回ごとに全売値+15%。S以外で途切れる' } },
+  { id: 'insider_rat', icon: '🐀', rarity: 'rare', effects: [{ type: 'stat', stat: 'newsFreqMult', op: 'mul', v: 1.6 }, { type: 'stat', stat: 'newsLeak', op: 'set', v: 1 }],
+    name: { en: 'Insider Rat', ja: '情報屋のネズミ' }, desc: { en: 'News happens 60% more often and leaks 12s early.', ja: 'ニュース頻度+60%、12秒前にリーク' } },
+  { id: 'gilded_scalpel', icon: '🗡️', rarity: 'rare', effects: [{ type: 'stat', stat: 'variantMult', op: 'mul', v: 3 }],
+    name: { en: 'Gilded Scalpel', ja: '金メッキのメス' }, desc: { en: 'Mutated variants appear 3× more often.', ja: '変異種の出現率3倍' } },
+  { id: 'wholesale_hook', icon: '🪝', rarity: 'rare', effects: [{ type: 'sale_bulk', min: 5, v: 2.5 }],
+    name: { en: 'Wholesale Hook', ja: '卸売りの鉤' }, desc: { en: 'Selling 5+ of the same part at once pays ×2.5.', ja: '同じパーツ5個以上の一括売却で×2.5' } },
+  { id: 'crucible', icon: '⚗️', rarity: 'common', effects: [{ type: 'stat', stat: 'scrapMult', op: 'mul', v: 8 }],
+    name: { en: "Alchemist's Crucible", ja: '錬金術師のるつぼ' }, desc: { en: 'Plate scrap pays ×8.', ja: '外皮スクラップ収入×8' } },
+  { id: 'black_ledger', icon: '📕', rarity: 'legendary', effects: [{ type: 'on_sell_global', v: 1.01 }],
+    name: { en: 'The Black Ledger', ja: '黒い台帳' }, desc: { en: 'Every part sold permanently multiplies ALL prices ×1.01 (compounds forever).', ja: '1個売るたび全価格が永続×1.01（複利）' } },
+  { id: 'bear_trap', icon: '🪤', rarity: 'common', effects: [{ type: 'sale_market_floor', v: 1 }],
+    name: { en: 'Bear Trap', ja: 'トラバサミ' }, desc: { en: 'Market multiplier never counts below ×1.0 when you sell.', ja: '売却時、相場倍率が×1.0未満にならない' } },
+  { id: 'pump_dump', icon: '📣', rarity: 'rare', effects: [{ type: 'sale_news', v: 2 }],
+    name: { en: 'Pump & Dump Pamphlet', ja: '煽りビラ' }, desc: { en: 'Parts boosted by active news sell for an extra ×2.', ja: '好材料ニュース中のパーツはさらに×2' } },
+  { id: 'fever_gland', icon: '🔥', rarity: 'common', effects: [{ type: 'stat', stat: 'comboCapMult', op: 'mul', v: 3 }, { type: 'stat', stat: 'comboWindowMult', op: 'mul', v: 1.5 }],
+    name: { en: 'Fever Gland', ja: '熱狂腺' }, desc: { en: 'Scrape combo cap ×3, combo window +50%.', ja: 'コンボ上限×3、コンボ猶予+50%' } },
+  { id: 'necro_cleaver', icon: '🪓', rarity: 'rare', effects: [{ type: 'sale_rotten', v: 1.5 }],
+    name: { en: "Necro Chef's Cleaver", ja: '屍料理人の包丁' }, desc: { en: 'Rotten parts sell at ×1.5 instead of ×0.1.', ja: '腐ったパーツが×0.1ではなく×1.5で売れる' } },
+  { id: 'cracked_mirror', icon: '🪞', rarity: 'legendary', effects: [{ type: 'sale_variant', v: 3 }],
+    name: { en: 'Cracked Mirror', ja: 'ひび割れた鏡' }, desc: { en: 'Variant parts (Golden, Crystal…) sell ×3.', ja: '変異種パーツの売値×3' } },
+  { id: 'third_hand', icon: '🖐️', rarity: 'common', effects: [{ type: 'stat', stat: 'safeSpeed', op: 'mul', v: 1.5 }],
+    name: { en: "Surgeon's Third Hand", ja: '外科医の第三の手' }, desc: { en: 'Safe pull speed +50%.', ja: '安全な引き抜き速度+50%' } },
+  { id: 'cursed_idol', icon: '🗿', rarity: 'legendary', effects: [{ type: 'sale_global', v: 2.5 }, { type: 'stat', stat: 'decayMult', op: 'mul', v: 2 }],
+    name: { en: 'Cursed Idol', ja: '呪いの偶像' }, desc: { en: 'ALL prices ×2.5 — but parts rot 2× faster.', ja: '全価格×2.5。ただし鮮度低下2倍' } },
+  { id: 'rigged_scales', icon: '⚖️', rarity: 'rare', effects: [{ type: 'sale_quality', q: 'S', v: 1.6 }],
+    name: { en: 'Rigged Scales', ja: 'イカサマ天秤' }, desc: { en: 'S-rank parts sell an extra ×1.6.', ja: 'Sランクパーツの売値さらに×1.6' } },
+  { id: 'perfect_eye', icon: '🎯', rarity: 'rare', effects: [{ type: 'on_perfect_cash', v: 2 }],
+    name: { en: "Perfectionist's Eye", ja: '完璧主義者の義眼' }, desc: { en: "PERFECT pulls instantly pay 2× the part's value as a tip.", ja: 'PERFECT摘出で、パーツ価値の2倍をチップで即獲得' } },
+];
+
+const NEWS = [
+  { id: 'war',        mult: 2.5,  dur: 45, target: { tags: ['mana'] },  headline: { en: 'WAR erupts in the Northern Kingdoms — battlemages hoard MANA', ja: '北方諸国で戦争勃発 — 戦闘魔術師が魔力素材を買い占め' } },
+  { id: 'plague',     mult: 3,    dur: 40, target: { tags: ['toxin'] }, headline: { en: 'Plague outbreak! Alchemists need venom for antidotes', ja: '疫病発生！錬金術師が解毒剤用の毒を求む' } },
+  { id: 'wedding',    mult: 2,    dur: 40, target: { tags: ['organ'] }, headline: { en: 'Royal wedding feast — exotic organs in demand', ja: '王家の婚礼晩餐会 — 珍味の臓器が品薄' } },
+  { id: 'inspector',  mult: 0.45, dur: 35, target: { tags: ['organ'] }, headline: { en: 'Guild health inspector raid! Organ buyers panic', ja: 'ギルド衛生監査の抜き打ち！臓器の買い手が逃走' } },
+  { id: 'cult',       mult: 4,    dur: 40, target: { tags: ['soul'] },  headline: { en: 'Necromancer cult buys souls in bulk', ja: '死霊術教団が魂を大量買い付け' } },
+  { id: 'fashion',    mult: 2.2,  dur: 45, target: { tags: ['scale'] }, headline: { en: 'Scale armor is the new trend in the capital', ja: '王都で鱗鎧が大流行' } },
+  { id: 'spa',        mult: 5,    dur: 35, target: { parts: ['slime_gel', 'slime_core'] }, headline: { en: 'Slime-gel facials go viral among nobles', ja: '貴族の間でスライムゲル美容がバズる' } },
+  { id: 'graveflood', mult: 0.4,  dur: 40, target: { tags: ['bone'] },  headline: { en: 'Graveyard flood — bones everywhere, prices sink', ja: '墓地の洪水で骨が大量流出、価格暴落' } },
+  { id: 'crash',      mult: 0.55, dur: 25, target: { all: true },       headline: { en: 'BLACK MARKET CRASH — the Guild is cracking down', ja: '闇市場大暴落 — ギルドの一斉摘発' } },
+  { id: 'bull',       mult: 1.6,  dur: 30, target: { all: true },       headline: { en: "Adventurers' bonus season — everyone is buying", ja: '冒険者のボーナス支給日 — 全品高騰' } },
+  { id: 'goblinking', mult: 4,    dur: 35, target: { monsters: ['goblin'] }, headline: { en: 'Goblin King puts a bounty on his own kind', ja: 'ゴブリン王が同族に懸賞金をかける' } },
+  { id: 'exam',       mult: 2,    dur: 40, target: { parts: ['spider_eye', 'slime_core', 'mana_stone', 'soul_gem'] }, headline: { en: 'Mage Academy exams — focus reagents sold out', ja: '魔法学院の試験期間 — 集中用触媒が売り切れ' } },
+  { id: 'caravan',    mult: 3,    dur: 40, target: { tags: ['silk'] },  headline: { en: 'Silk caravan robbed on the eastern road', ja: '東街道で絹のキャラバンが襲撃される' } },
+  { id: 'protest',    mult: 0.5,  dur: 40, target: { monsters: ['dragon'] }, headline: { en: 'Dragon worshippers protest — dragon goods boycotted', ja: '竜信仰者の抗議 — 竜素材の不買運動' } },
+  { id: 'abyss',      mult: 3,    dur: 40, target: { monsters: ['leviathan'] }, headline: { en: 'The Deep Ones whisper… abyssal goods surge', ja: '深きものどもの囁き…深淵素材が急騰' } },
+  { id: 'antidote',   mult: 0.4,  dur: 35, target: { tags: ['toxin'] }, headline: { en: 'Cheap universal antidote invented — toxins dumped', ja: '万能解毒剤が発明され毒素材が投げ売り' } },
+];
+
+const STR = {
+  subtitle: { en: 'DISSECTION & BLACK MARKET', ja: '解体＆相場師' },
+  cash: { en: 'Cash', ja: '所持金' }, perMin: { en: '$ / min', ja: '分間収益' }, lifetime: { en: 'Lifetime', ja: '累計収益' }, globalMult: { en: 'Global ×', ja: '全体倍率' },
+  table: { en: 'Butcher Table', ja: '解体台' }, plates: { en: 'PLATES', ja: '外皮' }, parts: { en: 'PARTS', ja: 'パーツ' },
+  workshop: { en: 'Workshop', ja: '作業場' }, toolReadout: { en: 'Tool Readout', ja: 'ツール性能' }, relics: { en: 'Dark Relics', ja: '闇の遺物' },
+  storage: { en: 'Cold Storage', ja: '保管庫（冷蔵）' }, sort: { en: 'SORT', ja: '並替' }, sellRot: { en: 'SELL ROT', ja: '腐敗品売却' }, sellEverything: { en: 'SELL ALL', ja: '全売却' },
+  quickSell: { en: '💰 FENCE — QUICK SELL', ja: '💰 故買屋 — 即売却' }, quickSellSub: { en: 'drop a part here to cash out instantly', ja: 'パーツをここにドロップで即現金化' },
+  lastDeal: { en: 'Last Deal', ja: '直近の取引' }, market: { en: 'Black Market Monitor', ja: '闇市場モニター' },
+  tabTools: { en: 'TOOLS', ja: 'ツール' }, tabFacility: { en: 'FACILITY', ja: '設備' }, tabRelics: { en: 'RELICS', ja: '遺物' }, tabOrders: { en: 'ORDERS', ja: '依頼' }, tabCodex: { en: 'CODEX', ja: '図鑑' },
+  haul: { en: 'HAUL OUT ▶', ja: '搬出 ▶' }, haulNext: { en: 'NEXT BODY ▶', ja: '次の死体 ▶' },
+  hintScrape: { en: 'HOLD & SCRUB to strip the plates', ja: '長押し＆ドラッグで外皮を剥がせ' },
+  hintPull: { en: 'GRAB the glowing part — pull STEADY. Too fast = torn tendons', ja: '光るパーツを掴んで一定速度で引き抜け。速すぎると腱が千切れる' },
+  hintDrop: { en: 'DROP it into COLD STORAGE or the FENCE →', ja: '保管庫 か 故買屋 へドロップ →' },
+  hintCare: { en: 'Careful: scraping over exposed parts damages them', ja: '注意：露出したパーツの上を削ると傷がつく' },
+  incoming: { en: 'INCOMING', ja: '搬入' }, cleared: { en: 'CLEARED', ja: '解体完了' },
+  fridgeFull: { en: 'STORAGE FULL → sold to Fence', ja: '保管庫満杯 → 故買屋へ売却' },
+  maxed: { en: 'MAX', ja: '最大' }, buy: { en: 'BUY', ja: '購入' }, sell: { en: 'SELL', ja: '売却' },
+  equipped: { en: 'Equipped', ja: '装備中' }, shop: { en: 'Black Altar Shop', ja: '闇の祭壇ショップ' }, reroll: { en: 'REROLL', ja: '再抽選' },
+  slotsFull: { en: 'Relic slots full', ja: '遺物スロットが満杯' }, emptySlot: { en: 'empty slot', ja: '空きスロット' },
+  deliver: { en: 'DELIVER', ja: '納品' }, orders: { en: 'Guild Orders', ja: 'ギルド特注依頼' }, reward: { en: 'Reward', ja: '報酬' },
+  codex: { en: 'Dissection Codex', ja: '解体図鑑' }, codexBonus: { en: 'Each entry: +2% to all prices', ja: '1項目ごとに全価格+2%' },
+  newEntry: { en: '📖 NEW CODEX ENTRY', ja: '📖 図鑑に新規登録' }, split: { en: 'SPLIT! ×2', ja: '分裂！×2' },
+  torn: { en: 'TORN!', ja: '千切れた！' }, perfect: { en: 'PERFECT!', ja: 'PERFECT!' }, exposed: { en: 'EXPOSED', ja: '露出' },
+  marketCalm: { en: 'Market is quiet… for now. Keep cutting.', ja: '市場は静か…今のところは。解体を続けろ。' },
+  breaking: { en: '⚠ BREAKING NEWS', ja: '⚠ 速報' }, rumor: { en: '📡 RUMOR (INSIDER RAT)', ja: '📡 リーク（情報屋）' },
+  newContract: { en: 'NEW CONTRACT', ja: '新規契約' }, fullStrip: { en: 'FULL STRIP BONUS', ja: '完全剥離ボーナス' },
+  stBlade: { en: 'Blade', ja: '刃' }, stBrush: { en: 'Scraper r', ja: '削り半径' }, stSafe: { en: 'Safe pull', ja: '安全速度' }, stStress: { en: 'Stress', ja: 'ストレス' },
+  stFridge: { en: 'Storage', ja: '保管枠' }, stDecay: { en: 'Decay', ja: '劣化' }, stDrone: { en: 'Drone', ja: 'ドローン' }, stPicker: { en: 'Picker', ja: 'アーム' },
+  held: { en: 'held', ja: '保有' }, unit: { en: 'A-grade unit', ja: 'A品単価' }, have: { en: 'have', ja: '所持' },
+  relicGot: { en: '🎁 RELIC ACQUIRED', ja: '🎁 遺物を獲得' }, relicCash: { en: 'Relic slots full → paid in cash', ja: 'スロット満杯 → 現金で受取' },
+  locked: { en: 'LOCKED', ja: '未解禁' }, unlocks: { en: 'Next', ja: '次' }, all: { en: 'ALL', ja: '全' },
+  noOrders: { en: 'No orders.', ja: '依頼なし' },
+};
+
+/* ============================ 2. STATE ============================ */
+const SAVE_KEY = 'dungeonScrap.proto.v1';
+function defaultState() {
+  return {
+    money: 0, lifetime: 0, sales: 0,
+    up: {},                 // upgradeId -> level
+    relics: [],             // equipped relic ids
+    perma: {},              // partId -> additive base bonus (Miser's Tooth)
+    ledger: 1,              // compounding global multiplier (Black Ledger)
+    fridge: [],             // {uid, partId, variant, q, perfect, fresh}
+    codex: {},              // "partId|variant" -> true
+    orders: [],
+    shop: { offers: [], rerolls: 0 },
+    market: {},             // partId -> m (multiplier)
+    streak: 0,
+    stats: { monsters: 0, extracted: 0, sCount: 0, perfect: 0, broken: 0, plates: 0 },
+    lang: 'en', sound: true, uid: 1,
+  };
+}
+let G = defaultState();
+let ST = {};                // derived stats (recomputed on change)
+let timeScale = 1;
+
+/* ============================ utils ============================ */
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rand = (a, b) => a + Math.random() * (b - a);
+const randi = (a, b) => Math.floor(rand(a, b + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const lerp = (a, b, t) => a + (b - a) * t;
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function hexToRgb(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+function mixHex(a, b, t) { const A = hexToRgb(a), B = hexToRgb(b); return '#' + A.map((v, i) => Math.round(lerp(v, B[i], t)).toString(16).padStart(2, '0')).join(''); }
+function shade(h, f) { const A = hexToRgb(h); return `rgb(${A.map(v => clamp(Math.round(v * f), 0, 255)).join(',')})`; }
+const L = o => o == null ? '' : typeof o === 'string' ? o : (o[G.lang] || o.en);
+const t = k => L(STR[k]) || k;
+const SUF = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'Ud', 'Dd', 'Td'];
+function fmt(n) {
+  if (!isFinite(n)) return '∞';
+  const neg = n < 0; n = Math.abs(n); let s;
+  if (n < 1000) s = n < 10 ? (Math.round(n * 100) / 100).toString() : n < 100 ? (Math.round(n * 10) / 10).toString() : Math.floor(n).toString();
+  else { const e = Math.floor(Math.log10(n) / 3); if (e < SUF.length) { const v = n / Math.pow(1000, e); s = (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : v.toFixed(0)) + SUF[e]; } else s = n.toExponential(2).replace('+', ''); }
+  return (neg ? '-' : '') + s;
+}
+const money = n => '$' + fmt(n);
+const fmtX = v => '×' + (v >= 100 ? fmt(v) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
+const MON_BY_ID = Object.fromEntries(MONSTERS.map(m => [m.id, m]));
+const UP_BY_ID = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
+const RELIC_BY_ID = Object.fromEntries(RELICS.map(r => [r.id, r]));
+const PART_IDS = Object.keys(PARTS);
+
+/* ============================ 3. SYSTEMS ============================ */
+// ---- derived stats
+function recomputeStats() {
+  const st = { blade: 1, brush: BAL.brushBase, safeSpeed: 1, stressMult: 1, fridgeSlots: BAL.fridgeBase, decayMult: 1,
+    droneLvl: 0, pickerLvl: 0, dock: 0, relicSlots: BAL.relicSlotsBase, variantMult: 1, scrapMult: 1,
+    comboCapMult: 1, comboWindowMult: 1, newsFreqMult: 1, newsLeak: 0 };
+  for (const u of UPGRADES) { const lv = G.up[u.id] || 0; if (lv) applyOp(st, u.eff, lv); }
+  for (const e of relicEffects('stat')) applyOp(st, e, 1);
+  ST = st;
+}
+function applyOp(st, e, lv) {
+  if (e.op === 'mul') st[e.stat] *= Math.pow(e.v, lv);
+  else if (e.op === 'add') st[e.stat] += e.v * lv;
+  else if (e.op === 'set') st[e.stat] = e.v;
+}
+function relicEffects(type) { const out = []; for (const id of G.relics) { const r = RELIC_BY_ID[id]; if (r) for (const e of r.effects) if (e.type === type) out.push(e); } return out; }
+function unlockedMonsters() { return MONSTERS.filter(m => m.dock <= ST.dock); }
+function unlockedParts() { const ms = new Set(unlockedMonsters().map(m => m.id)); return PART_IDS.filter(p => ms.has(PARTS[p].monster)); }
+function codexCount() { return Object.keys(G.codex).length; }
+function codexMult() { return 1 + codexCount() * BAL.codexBonus; }
+function globalMult() { let g = codexMult() * G.ledger; for (const e of relicEffects('sale_global')) g *= e.v; return g; }
+
+// ---- economy
+function freshMult(item) {
+  if (item.fresh <= 0) { const r = relicEffects('sale_rotten'); return r.length ? r[0].v : BAL.rottenMult; }
+  return BAL.freshFloor + (1 - BAL.freshFloor) * item.fresh / 100;
+}
+// Returns { total, lines:[{label, v, kind}] } — the full multiplier chain (Balatro-style receipt)
+function salePrice(item, ctx = {}) {
+  const p = PARTS[item.partId]; const lines = [];
+  const base = p.base * (1 + (G.perma[item.partId] || 0));
+  lines.push({ label: 'BASE', v: base, kind: 'base' });
+  let q = item.q;
+  const asQ = relicEffects('sale_broken_as'); if (q === 'X' && asQ.length) q = asQ[0].q;
+  let qm = QUALITY[q].mult; if (item.perfect) qm *= BAL.perfectMult;
+  lines.push({ label: item.perfect ? 'PERFECT' : (q === 'X' ? 'BROKEN' : q + '-RANK'), v: qm, kind: q === 'X' ? 'bad' : 'q' });
+  const fm = freshMult(item); lines.push({ label: item.fresh <= 0 ? 'ROTTEN' : 'FRESH', v: fm, kind: fm < 1 ? 'bad' : '' });
+  if (item.variant !== 'normal') {
+    let vm = VARIANTS[item.variant].mult; lines.push({ label: L(VARIANTS[item.variant].name).toUpperCase(), v: vm, kind: 'q' });
+    for (const e of relicEffects('sale_variant')) lines.push({ label: '🪞', v: e.v, kind: 'relic' });
+  }
+  let mm = MK[item.partId] ? MK[item.partId].m : 1;
+  for (const e of relicEffects('sale_market_floor')) mm = Math.max(mm, e.v);
+  lines.push({ label: 'MARKET', v: mm, kind: 'mkt' });
+  const nm = newsMultFor(item.partId);
+  if (nm > 1) for (const e of relicEffects('sale_news')) lines.push({ label: '📣', v: e.v, kind: 'relic' });
+  if (codexMult() > 1) lines.push({ label: 'CODEX', v: codexMult(), kind: 'relic' });
+  if (G.ledger > 1.0001) lines.push({ label: '📕', v: G.ledger, kind: 'relic' });
+  for (const e of relicEffects('sale_global')) lines.push({ label: RELICS.find(r => r.effects.includes(e)).icon, v: e.v, kind: 'relic' });
+  if (ctx.quick) for (const e of relicEffects('sale_quick')) lines.push({ label: '📜', v: e.v, kind: 'relic' });
+  for (const e of relicEffects('sale_per_stored')) { const n = G.fridge.length; if (n) lines.push({ label: '📒', v: 1 + n * e.v, kind: 'relic' }); }
+  for (const e of relicEffects('sale_streak')) if (G.streak > 0) lines.push({ label: '⏱️', v: 1 + G.streak * e.v, kind: 'relic' });
+  for (const e of relicEffects('sale_quality')) if (item.q === e.q) lines.push({ label: '⚖️', v: e.v, kind: 'relic' });
+  for (const e of relicEffects('sale_bulk')) if ((ctx.bulk || 1) >= e.min) lines.push({ label: '🪝', v: e.v, kind: 'relic' });
+  let total = base; for (let i = 1; i < lines.length; i++) total *= lines[i].v;
+  return { total, lines };
+}
+function addMoney(v) { G.money += v; G.lifetime += v; incomeLog.push([performance.now(), v]); bumpMoney(); }
+const incomeLog = [];
+let recentSales = [];
+
+function sellItems(items, ctx = {}, fromXY = null) {
+  if (!items.length) return 0;
+  ctx.bulk = ctx.bulk || items.length;
+  let sum = 0, first = null;
+  for (const it of items) { const r = salePrice(it, ctx); if (!first) first = r; sum += r.total; }
+  // remove from fridge
+  const ids = new Set(items.map(i => i.uid)); G.fridge = G.fridge.filter(i => !ids.has(i.uid));
+  addMoney(sum); G.sales += items.length;
+  // triggers (after pricing — they affect future sales)
+  for (const it of items) {
+    for (const e of relicEffects('on_sell_perma_part')) G.perma[it.partId] = (G.perma[it.partId] || 0) + e.v;
+    for (const e of relicEffects('on_sell_global')) G.ledger *= e.v;
+  }
+  if (relicEffects('on_sell_perma_part').length) fireRelicIcon('miser_tooth');
+  if (relicEffects('on_sell_global').length) fireRelicIcon('black_ledger');
+  renderReceipt(first, sum, items.length);
+  // juice
+  const avg = recentSales.length ? recentSales.reduce((a, b) => a + b, 0) / recentSales.length : sum;
+  recentSales.push(sum); if (recentSales.length > 12) recentSales.shift();
+  const huge = recentSales.length > 3 && sum > avg * 6;
+  const xy = fromXY || centerOf($('#quickSell'));
+  popAt(xy[0], xy[1] - 10, '+' + money(sum), 'cash');
+  coinFly(xy, Math.min(14, 3 + Math.floor(Math.log10(sum + 1) * 1.5)));
+  Sfx.cash(huge ? 2 : 1);
+  if (huge) { popAt(innerWidth / 2, innerHeight * 0.4, (G.lang === 'ja' ? '大口取引！ ' : 'HUGE DEAL! ') + money(sum), 'jack'); flash('rgba(255,201,60,.22)'); }
+  renderFridge(); refreshMarketRows(); markTabsDirty();
+  return sum;
+}
+function storeItem(item, fromXY) {
+  if (G.fridge.length < ST.fridgeSlots) { G.fridge.push(item); renderFridge(item.uid); refreshMarketRows(); markTabsDirty(); return true; }
+  popAt(...centerOf($('#fridgeZone')), t('fridgeFull'), 'warn');
+  sellItems([item], { quick: true }, fromXY || centerOf($('#quickSell')));
+  return false;
+}
+function makeItem(partId, variant, q, perfect) {
+  return { uid: G.uid++, partId, variant, q, perfect: !!perfect, fresh: 100 };
+}
+
+// ---- market
+const MK = {};       // runtime market: partId -> {m, mom, hist[], marks[]}
+let mkTick = 0;
+function initMarket() {
+  for (const pid of PART_IDS) {
+    const m = G.market[pid] || 1;
+    MK[pid] = { m, mom: 0, hist: [], marks: [] };
+    for (let i = 0; i < BAL.marketHist - 1; i++) MK[pid].hist.push(m * (1 + gauss() * 0.02));
+    MK[pid].hist.push(m);
+  }
+}
+function tickMarket() {
+  mkTick++;
+  for (const pid of PART_IDS) {
+    const k = MK[pid], p = PARTS[pid];
+    const target = newsMultFor(pid);
+    k.mom = k.mom * 0.85 + gauss() * p.vol * 0.35;
+    k.m += (target - k.m) * BAL.marketRevert * 1.6 * (target !== 1 ? 1.6 : 1) + k.mom * k.m + gauss() * p.vol * k.m * 0.6;
+    k.m = clamp(k.m, BAL.marketMin, BAL.marketMax);
+    k.hist.push(k.m); if (k.hist.length > BAL.marketHist) k.hist.shift();
+    G.market[pid] = k.m;
+  }
+  refreshMarketRows(); drawChart(); refreshFridgePrices();
+}
+function trendOf(pid) {
+  const h = MK[pid].hist; const a = h[Math.max(0, h.length - 6)], b = h[h.length - 1]; const r = b / a;
+  if (r > 1.15) return ['↑↑', 'up']; if (r > 1.03) return ['↑', 'up']; if (r < 0.87) return ['↓↓', 'dn']; if (r < 0.97) return ['↓', 'dn']; return ['→', 'flat'];
+}
+
+// ---- news
+const NEWS_RT = { active: [], next: rand(18, 26), pending: null, leaked: false };
+function newsAffects(def, pid) {
+  const tg = def.target, p = PARTS[pid];
+  return !!(tg.all || (tg.parts && tg.parts.includes(pid)) || (tg.tags && tg.tags.some(x => p.tags.includes(x))) || (tg.monsters && tg.monsters.includes(p.monster)));
+}
+function newsMultFor(pid) { let m = 1; for (const a of NEWS_RT.active) if (newsAffects(a.def, pid)) m *= a.def.mult; return m; }
+function pickNews() {
+  const up = unlockedParts(); const act = new Set(NEWS_RT.active.map(a => a.def.id));
+  const pool = NEWS.filter(n => !act.has(n.id) && up.some(p => newsAffects(n, p)));
+  return pool.length ? pick(pool) : null;
+}
+function updateNews(dt) {
+  for (const a of NEWS_RT.active) a.t -= dt;
+  const before = NEWS_RT.active.length;
+  NEWS_RT.active = NEWS_RT.active.filter(a => a.t > 0);
+  if (NEWS_RT.active.length !== before) updateTicker();
+  NEWS_RT.next -= dt * ST.newsFreqMult;
+  if (!NEWS_RT.pending) NEWS_RT.pending = pickNews();
+  if (NEWS_RT.pending && ST.newsLeak && !NEWS_RT.leaked && NEWS_RT.next <= BAL.newsLeak * ST.newsFreqMult) {
+    NEWS_RT.leaked = true; showBreaking(NEWS_RT.pending, true); fireRelicIcon('insider_rat'); updateTicker();
+  }
+  if (NEWS_RT.next <= 0) {
+    if (NEWS_RT.pending) fireNews(NEWS_RT.pending);
+    NEWS_RT.pending = null; NEWS_RT.leaked = false; NEWS_RT.next = rand(BAL.newsMin, BAL.newsMax);
+  }
+}
+function fireNews(def) {
+  NEWS_RT.active.push({ def, t: def.dur, max: def.dur });
+  for (const pid of PART_IDS) if (newsAffects(def, pid)) MK[pid].marks.push({ tick: mkTick, up: def.mult > 1 });
+  showBreaking(def, false); updateTicker(); Sfx.news();
+}
+function newsTargetLabel(def) {
+  const tg = def.target;
+  if (tg.all) return t('all');
+  if (tg.tags) return tg.tags.map(x => L(TAGS[x])).join('/');
+  if (tg.monsters) return tg.monsters.map(m => L(MON_BY_ID[m].name)).join('/');
+  return tg.parts.filter(p => unlockedParts().includes(p)).map(p => PARTS[p].icon).join('');
+}
+
+// ---- orders
+function genOrder() {
+  const ups = unlockedParts();
+  const maxTier = Math.max(...ups.map(p => MON_BY_ID[PARTS[p].monster].tier));
+  let pool = ups.filter(p => MON_BY_ID[PARTS[p].monster].tier >= maxTier - 1);
+  const fresh = pool.filter(p => !G.orders.some(o => o.partId === p)); if (fresh.length) pool = fresh;   // avoid duplicate orders
+  const pid = pick(pool); const p = PARTS[pid];
+  const count = randi(2, 4) + (Math.random() < .3 ? 1 : 0);
+  const minQ = pick(['B', 'A', 'A', 'A', 'S']);
+  const variant = Math.random() < 0.08 ? 'golden' : null;
+  const reward = p.base * count * QUALITY[minQ].mult * (variant ? VARIANTS[variant].mult : 1) * BAL.orderRewardMult * rand(1, 1.5);
+  return { id: G.uid++, partId: pid, count, minQ, variant, reward, relic: Math.random() < BAL.orderRelicChance, t: BAL.orderTime, max: BAL.orderTime };
+}
+function orderMatches(o) {
+  return G.fridge.filter(i => i.partId === o.partId && QUALITY[i.q].rank >= QUALITY[o.minQ].rank && (!o.variant || i.variant === o.variant) && i.fresh > 0);
+}
+function deliverOrder(id) {
+  const o = G.orders.find(x => x.id === id); if (!o) return;
+  const m = orderMatches(o); if (m.length < o.count) return;
+  m.sort((a, b) => QUALITY[a.q].rank - QUALITY[b.q].rank || a.fresh - b.fresh);
+  const use = new Set(m.slice(0, o.count).map(i => i.uid));
+  G.fridge = G.fridge.filter(i => !use.has(i.uid));
+  const pay = o.reward * G.ledger;
+  addMoney(pay);
+  const xy = centerOf($('#tabBody'));
+  popAt(xy[0], xy[1], '+' + money(pay), 'cash'); coinFly(xy, 12); Sfx.rankS();
+  if (o.relic) grantRandomRelic(xy, pay);
+  G.orders = G.orders.filter(x => x.id !== id); G.orders.push(genOrder());
+  renderFridge(); renderTab(); refreshMarketRows();
+}
+function updateOrders(dt) {
+  let changed = false;
+  for (const o of G.orders) { o.t -= dt; if (o.t <= 0) changed = true; }
+  if (changed) { G.orders = G.orders.filter(o => o.t > 0); while (G.orders.length < BAL.orderCount) G.orders.push(genOrder()); if (curTab === 'orders') renderTab(); }
+}
+
+// ---- relics
+function relicScale() { return Math.pow(Math.max(1, G.lifetime / BAL.relicScaleDiv), BAL.relicScalePow); }
+function relicPrice(id) { return Math.ceil(BAL.relicCost[RELIC_BY_ID[id].rarity] * relicScale()); }
+function rerollPrice() { return Math.ceil(BAL.rerollBase * relicScale() * Math.pow(1.5, G.shop.rerolls)); }
+function rollRelicId(exclude) {
+  const pool = RELICS.filter(r => !G.relics.includes(r.id) && !exclude.includes(r.id)); if (!pool.length) return null;
+  let tot = pool.reduce((s, r) => s + BAL.relicWeight[r.rarity], 0), x = Math.random() * tot;
+  for (const r of pool) { x -= BAL.relicWeight[r.rarity]; if (x <= 0) return r.id; } return pool[0].id;
+}
+function rollShop() { const offers = []; for (let i = 0; i < 3; i++) { const id = rollRelicId(offers); if (id) offers.push(id); } G.shop.offers = offers; }
+function equipRelic(id) { G.relics.push(id); recomputeStats(); renderRelicSlots(); renderToolStats(); renderFridge(); Sfx.relic(); }
+function buyRelic(id) {
+  const c = relicPrice(id); if (G.money < c) return;
+  if (G.relics.length >= ST.relicSlots) { popAt(...centerOf($('#relicSlots')), t('slotsFull'), 'warn'); Sfx.bad(); return; }
+  G.money -= c; equipRelic(id); G.shop.offers = G.shop.offers.filter(x => x !== id); G.shop.rerolls = 0;
+  const nid = rollRelicId(G.shop.offers); if (nid) G.shop.offers.push(nid);
+  popAt(...centerOf($('#relicSlots')), RELIC_BY_ID[id].icon + ' ' + L(RELIC_BY_ID[id].name), 'info');
+  renderTab();
+}
+function sellRelic(id) {
+  const refund = relicPrice(id) * BAL.relicRefund; G.relics = G.relics.filter(x => x !== id); addMoney(refund);
+  recomputeStats(); renderRelicSlots(); renderToolStats(); renderTab(); renderFridge(); Sfx.cash(1);
+}
+function grantRandomRelic(xy, fallbackCash) {
+  const id = rollRelicId([]);
+  if (id && G.relics.length < ST.relicSlots) { equipRelic(id); popAt(xy[0], xy[1] + 30, t('relicGot') + ' ' + RELIC_BY_ID[id].icon, 'info'); }
+  else { addMoney(fallbackCash); popAt(xy[0], xy[1] + 30, t('relicCash'), 'info'); }
+}
+function fireRelicIcon(id) { const i = G.relics.indexOf(id); if (i < 0) return; const el = $('#relicSlots').children[i]; if (!el) return; el.classList.remove('fire'); void el.offsetWidth; el.classList.add('fire'); }
+
+// ---- upgrades
+function upCost(u, lv) { return u.costs ? u.costs[lv] : Math.ceil(u.base * Math.pow(u.growth, lv)); }
+function buyUpgrade(id) {
+  const u = UP_BY_ID[id]; const lv = G.up[id] || 0; if (lv >= u.max) return;
+  const c = upCost(u, lv); if (G.money < c) { Sfx.bad(); return; }
+  G.money -= c; G.up[id] = lv + 1; recomputeStats(); Sfx.buy();
+  if (id === 'dock') {
+    const nm = MONSTERS.find(m => m.dock === ST.dock);
+    if (nm) { T.forceNext = nm.id; popAt(innerWidth / 2, innerHeight * 0.35, t('newContract') + ': ' + nm.emoji + ' ' + L(nm.name), 'big'); flash('rgba(166,255,61,.15)'); }
+    buildMarketList(); while (G.orders.length < BAL.orderCount) G.orders.push(genOrder());
+  }
+  if (id === 'fridge') renderFridge();
+  if (id === 'altar') renderRelicSlots();
+  renderToolStats(); renderTab();
+}
+
+// ---- codex
+function discover(partId, variant, xy) {
+  const k = partId + '|' + variant; if (G.codex[k]) return;
+  G.codex[k] = true; popAt(xy[0], xy[1] + 46, t('newEntry'), 'info'); markTabNotify('codex');
+}
+
+/* ============================ 4. TABLE ============================ */
+const T = {
+  cv: null, ctx: null, w: 0, h: 0, dpr: 1, bg: null,
+  area: { ox: 0, oy: 0, size: 0 },
+  mon: null, state: 'empty', anim: 0, clearT: 0, forceNext: null, forceVariant: false,
+  ptr: { x: 0, y: 0, px: 0, py: 0, down: false, inside: false, vs: 0, cx: 0, cy: 0 },
+  pull: null, held: null, particles: [], shake: 0,
+  combo: 0, comboT: 0, scrapAcc: 0, scrapT: 0, scrapXY: [0, 0], lastCrack: 0, hurtT: 0,
+  drone: { x: .5, y: .5, target: null, laser: 0 }, time: 0,
+};
+
+function insideBody(def, x, y, pad = 0) {
+  for (const e of def.body) {
+    const dx = x - e.x, dy = y - e.y, r = e.rot || 0, c = Math.cos(r), s = Math.sin(r);
+    const xr = dx * c + dy * s, yr = -dx * s + dy * c;
+    const rx = e.rx + pad, ry = e.ry + pad; if ((xr * xr) / (rx * rx) + (yr * yr) / (ry * ry) <= 1) return true;
+  }
+  return false;
+}
+function rollVariant() {
+  if (T.forceVariant) { T.forceVariant = false; return pick(['golden', 'crystal', 'cursed', 'abyssal']); }
+  for (const v of ['abyssal', 'crystal', 'golden', 'cursed']) if (Math.random() < VARIANTS[v].chance * ST.variantMult) return v;
+  return 'normal';
+}
+function chooseMonster() {
+  if (T.forceNext) { const id = T.forceNext; T.forceNext = null; return MON_BY_ID[id]; }
+  const un = unlockedMonsters().sort((a, b) => b.tier - a.tier);
+  const w = un.map((m, i) => i === 0 ? 6 : i === 1 ? 3 : 1);
+  let x = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < un.length; i++) { x -= w[i]; if (x <= 0) return un[i]; }
+  return un[0];
+}
+function spawnMonster() {
+  const def = chooseMonster(); const variant = rollVariant(); const res = def.grid;
+  const cells = [];
+  for (let j = 0; j < res; j++) for (let i = 0; i < res; i++) {
+    const nx = (i + .5) / res, ny = (j + .5) / res;
+    if (insideBody(def, nx, ny, 0.35 / res)) {
+      const seed = Math.random();
+      const cracks = []; for (let k = 0; k < 3; k++) { const a = Math.random() * 6.28; cracks.push([.5 + Math.cos(a) * .1, .5 + Math.sin(a) * .1, .5 + Math.cos(a + rand(-.6, .6)) * .5, .5 + Math.sin(a + rand(-.6, .6)) * .5]); }
+      cells.push({ i, j, nx, ny, layer: 0, hp: def.plateHp * def.layers[0].hp, cleared: false, flash: 0, seed, cracks });
+    }
+  }
+  const parts = def.parts.map((p, idx) => {
+    const cover = cells.filter(c => Math.hypot(c.nx - p.x, c.ny - p.y) < p.r + 0.6 / res);
+    return { idx, partId: p.part, nx: p.x, ny: p.y, r: p.r, exposed: cover.length === 0, extracted: false, nick: 0, exposedT: 0, cover, wob: 0, hurt: 0 };
+  });
+  const veins = []; for (let k = 0; k < 14; k++) { let x, y, n = 0; do { x = Math.random(); y = Math.random(); n++; } while (!insideBody(def, x, y) && n < 200); veins.push([x, y, x + rand(-.12, .12), y + rand(-.12, .12), x + rand(-.15, .15), y + rand(-.15, .15)]); }
+  const vcol = VARIANTS[variant].color;
+  T.mon = { def, variant, cells, parts, veins, layerCols: def.layers.map(l => vcol ? mixHex(l.color, vcol, .5) : l.color), total: cells.length, blinkT: rand(2, 5), blink: 0 };
+  T.state = 'arriving'; T.anim = 0; T.drone.target = null;
+  renderMonTag(); Sfx.thud();
+  const [cx, cy] = tableToClient(T.w / 2, T.h * 0.2);
+  popAt(cx, cy, t('incoming') + ': ' + def.emoji + ' ' + L(def.name), 'info');
+  if (variant !== 'normal') setTimeout(() => { popAt(cx, cy + 40, '★ ' + L(VARIANTS[variant].name).toUpperCase() + ' VARIANT ★ ×' + VARIANTS[variant].mult, 'big'); flash(vcol + '33'); Sfx.rankS(); }, 500);
+}
+function haulOut() {
+  if (!T.mon || T.state === 'leaving' || T.state === 'arriving') return;
+  if (T.pull) cancelPull();
+  T.state = 'leaving'; T.anim = 0; Sfx.thud();
+}
+
+function scale() { return T.area.size / BAL.refSize; }
+function cellPx(c) { const cs = T.area.size / T.mon.def.grid; return [T.area.ox + c.i * cs, T.area.oy + c.j * cs, cs]; }
+function partPx(p) { return [T.area.ox + p.nx * T.area.size, T.area.oy + p.ny * T.area.size, p.r * T.area.size]; }
+
+function damageCell(c, dmg, src) {
+  c.hp -= dmg; c.flash = 1;
+  if (c.hp > 0) return;
+  const def = T.mon.def; const [x, y, cs] = cellPx(c);
+  const col = T.mon.layerCols[c.layer];
+  burst(x + cs / 2, y + cs / 2, 5 + Math.floor(Math.random() * 4), { kind: 'chip', colors: [col, shade(col, 1.3), shade(col, .7)], sp: 260, life: .8, s0: cs * .18, s1: cs * .38 });
+  if (c.layer === def.layers.length - 1) burst(x + cs / 2, y + cs / 2, 3, { kind: 'blood', colors: ['#a3121f', '#d2202f', '#6e0b14'], sp: 150, life: .6, s0: 2, s1: 4 });
+  // scrap & combo
+  if (src === 'player') { T.combo++; T.comboT = BAL.comboWindow * ST.comboWindowMult; }
+  const cm = 1 + Math.min(T.combo, BAL.comboCap * ST.comboCapMult) * BAL.comboStep;
+  const sc = def.scrap * ST.scrapMult * cm * (VARIANTS[T.mon.variant].mult > 1 ? 1.5 : 1) * G.ledger;
+  G.money += sc; G.lifetime += sc; incomeLog.push([performance.now(), sc]);
+  T.scrapAcc += sc; T.scrapXY = [x + cs / 2, y];
+  G.stats.plates++;
+  const now = performance.now(); if (now - T.lastCrack > 28) { Sfx.crack(T.combo, c.layer < def.layers.length - 1); T.lastCrack = now; }
+  T.shake = Math.max(T.shake, 1.5);
+  c.layer++;
+  if (c.layer >= def.layers.length) { c.cleared = true; checkExposure(); }
+  else c.hp = def.plateHp * def.layers[c.layer].hp;
+}
+function checkExposure() {
+  for (const p of T.mon.parts) {
+    if (p.exposed || p.extracted) continue;
+    if (p.cover.every(c => c.cleared)) {
+      p.exposed = true; p.wob = 1;
+      const [x, y, r] = partPx(p);
+      burst(x, y, 16, { kind: 'spark', colors: ['#fff6b0', '#a6ff3d', '#ffd23f'], sp: 320, life: .5, s0: 1, s1: 2.5, g: 0 });
+      T.particles.push({ kind: 'ring', x, y, life: .5, max: .5, r0: r, r1: r * 3, color: VARIANTS[T.mon.variant].color || '#a6ff3d' });
+      const [cx, cy] = tableToClient(x, y - r * 1.6); popAt(cx, cy, t('exposed') + ' ' + PARTS[p.partId].icon, 'info');
+      Sfx.expose();
+    }
+  }
+}
+
+function startPull(p) {
+  T.pull = { part: p, stress: p.nick, t: 0, maxStress: p.nick };
+  T.ptr.vs = 0; Sfx.creakStart();
+}
+function cancelPull() {
+  const P = T.pull; if (!P) return;
+  P.part.nick = Math.max(P.part.nick, P.stress * 0.8); P.part.wob = 1;
+  T.pull = null; Sfx.creakStop();
+}
+function gradeOf(stress) { return stress < BAL.gradeS ? 'S' : stress < BAL.gradeA ? 'A' : stress < BAL.gradeB ? 'B' : 'X'; }
+function detach(torn) {
+  const P = T.pull; const p = P.part; T.pull = null; Sfx.creakStop();
+  p.extracted = true;
+  const q = torn ? 'X' : gradeOf(P.stress);
+  const sc = scale(); const safe = BAL.safeSpeed * ST.safeSpeed * sc; const pd = BAL.pullDist * T.area.size;
+  const perfect = q === 'S' && P.t <= (pd / safe) * BAL.perfectTimeFactor;
+  const item = makeItem(p.partId, T.mon.variant, q, perfect);
+  G.stats.extracted++;
+  if (q === 'S') { G.stats.sCount++; G.streak++; if (G.relics.includes('metronome')) fireRelicIcon('metronome'); } else G.streak = 0;
+  if (perfect) G.stats.perfect++;
+  if (q === 'X') G.stats.broken++;
+  const x = T.ptr.x, y = T.ptr.y; const [cx, cy] = tableToClient(x, y);
+  // FX
+  const [sx, sy, r] = partPx(p);
+  burst(sx, sy, torn ? 40 : 22, { kind: 'blood', colors: ['#a3121f', '#d2202f', '#ff4a5a', '#6e0b14'], sp: torn ? 520 : 330, life: .9, s0: 2, s1: torn ? 7 : 5 });
+  T.shake = Math.max(T.shake, torn ? 12 : q === 'S' ? 7 : 4);
+  if (torn) { popAt(cx, cy - 40, t('torn'), 'rankX'); Sfx.tear(); flash('rgba(255,40,50,.18)'); }
+  else if (perfect) { popAt(cx, cy - 50, t('perfect'), 'perfect'); popAt(cx, cy, 'S ×' + (QUALITY.S.mult * BAL.perfectMult).toFixed(2), 'rankA'); Sfx.perfect(); flash('rgba(255,230,120,.28)'); burst(x, y, 40, { kind: 'spark', colors: ['#fff', '#ffd23f', '#38e8ff', '#ff2d6f'], sp: 600, life: .8, s0: 1.5, s1: 3, g: 200 }); }
+  else if (q === 'S') { popAt(cx, cy - 46, 'S RANK! +50%', 'big'); Sfx.rankS(); flash('rgba(255,210,63,.16)'); burst(x, y, 26, { kind: 'spark', colors: ['#fff', '#ffd23f'], sp: 450, life: .6, s0: 1.5, s1: 3, g: 200 }); }
+  else if (q === 'A') { popAt(cx, cy - 40, 'A RANK', 'rankA'); Sfx.pop(); }
+  else { popAt(cx, cy - 40, 'B RANK…', 'rankB'); Sfx.pop(); }
+  discover(p.partId, T.mon.variant, [cx, cy]);
+  if (perfect) for (const e of relicEffects('on_perfect_cash')) { const tip = salePrice(item).total * e.v; addMoney(tip); popAt(cx, cy + 26, '🎯 TIP +' + money(tip), 'cash'); fireRelicIcon('perfect_eye'); }
+  // split
+  for (const e of relicEffects('on_extract_split')) if (QUALITY[q].rank >= QUALITY[e.minQ].rank && Math.random() < e.chance) {
+    const twin = makeItem(p.partId, T.mon.variant, q, perfect); popAt(cx, cy + 50, t('split'), 'big'); fireRelicIcon('twin_fetus'); Sfx.rankS();
+    setTimeout(() => storeItem(twin, [cx, cy]), 250);
+  }
+  T.held = item; showGhost(item);
+  checkMonsterDone();
+}
+function autoPick(p) {
+  p.extracted = true;
+  const q = p.nick < BAL.gradeA ? 'A' : p.nick < BAL.gradeB ? 'B' : 'X';
+  const item = makeItem(p.partId, T.mon.variant, q, false);
+  G.stats.extracted++;
+  const [x, y] = partPx(p); const [cx, cy] = tableToClient(x, y);
+  burst(x, y, 14, { kind: 'blood', colors: ['#a3121f', '#d2202f'], sp: 240, life: .7, s0: 2, s1: 4 });
+  popAt(cx, cy - 30, '🦾 ' + QUALITY[q].label, 'rankA'); Sfx.pop();
+  discover(p.partId, T.mon.variant, [cx, cy]);
+  storeItem(item, [cx, cy]);
+  checkMonsterDone();
+}
+function checkMonsterDone() {
+  if (T.mon.parts.every(p => p.extracted) && T.state === 'working') {
+    T.state = 'cleared'; T.clearT = 1.1; G.stats.monsters++;
+    const ratio = T.mon.cells.filter(c => c.cleared).length / T.mon.total;
+    const [cx, cy] = tableToClient(T.w / 2, T.h * 0.45);
+    popAt(cx, cy, t('cleared') + '!', 'rankA');
+    if (ratio >= 0.95) { const b = T.mon.def.scrap * T.mon.total * BAL.fullStripBonus * ST.scrapMult * G.ledger; addMoney(b); setTimeout(() => popAt(cx, cy + 40, t('fullStrip') + ' +' + money(b), 'cash'), 250); }
+  }
+}
+
+// --- simulation tick
+function updateTable(dt) {
+  T.time += dt;
+  const P = T.ptr;
+  const moved = Math.hypot(P.x - P.px, P.y - P.py);
+  const v = dt > 0 ? moved / dt : 0;
+  P.vs = P.vs * 0.55 + v * 0.45;
+  // combo
+  if (T.comboT > 0) { T.comboT -= dt; if (T.comboT <= 0) T.combo = 0; }
+  // scrap popups (aggregated)
+  T.scrapT -= dt;
+  if (T.scrapAcc > 0 && T.scrapT <= 0) { const [cx, cy] = tableToClient(...T.scrapXY); popAt(cx + rand(-10, 10), cy, '+' + money(T.scrapAcc), 'scrap'); T.scrapAcc = 0; T.scrapT = 0.18; }
+
+  if (T.mon) {
+    const m = T.mon;
+    m.blinkT -= dt; if (m.blinkT <= 0) { m.blink = 0.14; m.blinkT = rand(2, 5); } if (m.blink > 0) m.blink -= dt;
+    for (const c of m.cells) if (c.flash > 0) c.flash -= dt * 6;
+    for (const p of m.parts) { if (p.wob > 0) p.wob -= dt * 2; if (p.hurt > 0) p.hurt -= dt * 4; }
+    if (T.state === 'arriving') { T.anim += dt / 0.6; if (T.anim >= 1) { T.state = 'working'; T.shake = 6; Sfx.thud(); } }
+    else if (T.state === 'leaving') { T.anim += dt / 0.45; if (T.anim >= 1) { T.mon = null; spawnMonster(); } }
+    else if (T.state === 'cleared') { T.clearT -= dt; if (T.clearT <= 0) haulOut(); }
+  }
+  if (T.mon && T.state === 'working') {
+    const m = T.mon, def = m.def, sc = scale();
+    // --- player scraping
+    if (P.down && !T.pull && !T.held && P.inside) {
+      const brush = ST.brush * sc;
+      const dmg = ST.blade * (Math.min(moved, 80) * BAL.scrapePerPx / sc + dt * BAL.scrapeIdle);
+      const cs = T.area.size / def.grid; const reach = brush + cs * .35;
+      let hit = false;
+      for (const c of m.cells) {
+        if (c.cleared) continue;
+        const [x, y] = cellPx(c); const d = Math.hypot(P.x - (x + cs / 2), P.y - (y + cs / 2));
+        if (d < reach) { hit = true; damageCell(c, dmg * (1 - .5 * d / reach), 'player'); }
+      }
+      if (hit && moved > 1.5) { Sfx.scrape(); if (Math.random() < .5) burst(P.x, P.y, 1, { kind: 'dust', colors: ['#d8c9b0', '#8d7f76'], sp: 120, life: .4, s0: 1, s1: 2.5, g: 300 }); }
+      // nicking exposed parts
+      for (const p of m.parts) {
+        if (!p.exposed || p.extracted) continue;
+        const [x, y, r] = partPx(p); const d = Math.hypot(P.x - x, P.y - y);
+        if (d < r + brush * .6 && moved > 1) {
+          p.nick = Math.min(99, p.nick + dmg / def.plateHp * BAL.nickPerDmg * 0.5);
+          p.hurt = 1; T.hurtT = 2;
+          if (Math.random() < .3) burst(x, y, 1, { kind: 'blood', colors: ['#d2202f'], sp: 90, life: .4, s0: 1.5, s1: 3 });
+        }
+      }
+    }
+    // --- pulling
+    if (T.pull) {
+      const Pl = T.pull; const p = Pl.part; Pl.t += dt;
+      const [sx, sy] = partPx(p); const dist = Math.hypot(P.x - sx, P.y - sy);
+      const safe = BAL.safeSpeed * ST.safeSpeed * sc;
+      if (P.vs > safe) Pl.stress += Math.pow((P.vs - safe) / safe, BAL.stressPow) * dt * BAL.stressRate * ST.stressMult;
+      Pl.maxStress = Math.max(Pl.maxStress, Pl.stress);
+      Sfx.creakSet(Pl.stress, dist / (BAL.pullDist * T.area.size));
+      if (Pl.stress >= BAL.gradeB) detach(true);
+      else if (dist >= BAL.pullDist * T.area.size) detach(false);
+    }
+    // --- drone
+    if (ST.droneLvl > 0) updateDrone(dt);
+    // --- auto picker
+    if (ST.pickerLvl > 0) {
+      const delay = BAL.pickerBaseDelay / ST.pickerLvl;
+      for (const p of m.parts) if (p.exposed && !p.extracted && (!T.pull || T.pull.part !== p)) { p.exposedT += dt; if (p.exposedT >= delay) autoPick(p); }
+    }
+  }
+  // particles
+  for (const q of T.particles) {
+    q.life -= dt;
+    if (q.kind === 'ring') continue;
+    q.vy += (q.g ?? 900) * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.rot += q.vr * dt;
+    if (q.kind === 'blood' && q.y > T.h - 6) { q.y = T.h - 6; q.vy = 0; q.vx *= .8; }
+  }
+  T.particles = T.particles.filter(q => q.life > 0);
+  if (T.particles.length > 700) T.particles.splice(0, T.particles.length - 700);
+  T.shake *= Math.pow(0.0008, dt);
+  P.px = P.x; P.py = P.y;
+}
+function updateDrone(dt) {
+  const D = T.drone, m = T.mon;
+  if (!D.target || D.target.cleared) { const live = m.cells.filter(c => !c.cleared); D.target = live.length ? pick(live) : null; }
+  if (!D.target) { D.laser = 0; return; }
+  const tx = D.target.nx, ty = D.target.ny - .04; const dx = tx - D.x, dy = ty - D.y, d = Math.hypot(dx, dy);
+  const sp = BAL.droneSpeed * dt;
+  if (d > .02) { D.x += dx / d * Math.min(sp, d); D.y += dy / d * Math.min(sp, d); D.laser = 0; return; }
+  D.laser = 1;
+  const dps = ST.droneLvl * BAL.droneDpsPerLvl * ST.blade;
+  for (const c of m.cells) if (!c.cleared && Math.hypot(c.nx - D.target.nx, c.ny - D.target.ny) < BAL.droneRadius) damageCell(c, dps * dt * (c === D.target ? 1.5 : .6), 'drone');
+  if (Math.random() < .4) { const [x, y, cs] = cellPx(D.target); burst(x + cs / 2, y + cs / 2, 1, { kind: 'spark', colors: ['#38e8ff', '#fff'], sp: 200, life: .3, s0: 1, s1: 2, g: 400 }); }
+}
+
+function burst(x, y, n, o) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = o.sp * rand(.3, 1);
+    T.particles.push({ kind: o.kind, x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - o.sp * .35, life: o.life * rand(.6, 1), max: o.life, color: pick(o.colors), size: rand(o.s0, o.s1), rot: rand(0, 6.28), vr: rand(-12, 12), g: o.g });
+  }
+}
+
+// --- rendering
+function resizeTable() {
+  const r = T.cv.getBoundingClientRect(); T.dpr = Math.min(2, devicePixelRatio || 1);
+  T.w = r.width; T.h = r.height; T.cv.width = Math.round(r.width * T.dpr); T.cv.height = Math.round(r.height * T.dpr);
+  const size = Math.min(T.w * .9, T.h * .8);
+  T.area = { ox: (T.w - size) / 2, oy: (T.h - size) / 2 + T.h * .02, size };
+  buildTableBg();
+}
+function buildTableBg() {
+  const c = document.createElement('canvas'); c.width = T.cv.width; c.height = T.cv.height; const g = c.getContext('2d'); g.scale(T.dpr, T.dpr);
+  const w = T.w, h = T.h;
+  g.fillStyle = '#0c0a09'; g.fillRect(0, 0, w, h);
+  // steel slab
+  const pad = 14, sx = pad, sy = pad + 4, sw = w - pad * 2, sh = h - pad * 2 - 4;
+  const grd = g.createLinearGradient(0, sy, 0, sy + sh); grd.addColorStop(0, '#3a3836'); grd.addColorStop(.5, '#2a2827'); grd.addColorStop(1, '#1d1b1a');
+  g.fillStyle = grd; roundRectPath(g, sx, sy, sw, sh, 14); g.fill();
+  g.strokeStyle = '#55504c'; g.lineWidth = 2; g.stroke();
+  // brushed metal lines
+  g.globalAlpha = .06; g.strokeStyle = '#fff'; g.lineWidth = 1;
+  for (let i = 0; i < 220; i++) { const y = sy + Math.random() * sh, x = sx + Math.random() * sw; g.beginPath(); g.moveTo(x, y); g.lineTo(x + rand(30, 160), y + rand(-1, 1)); g.stroke(); }
+  g.globalAlpha = 1;
+  // scratches
+  g.strokeStyle = 'rgba(0,0,0,.35)';
+  for (let i = 0; i < 40; i++) { const x = sx + Math.random() * sw, y = sy + Math.random() * sh; g.beginPath(); g.moveTo(x, y); g.lineTo(x + rand(-40, 40), y + rand(-40, 40)); g.stroke(); }
+  // old stains
+  for (let i = 0; i < 9; i++) { const x = sx + Math.random() * sw, y = sy + Math.random() * sh, r = rand(20, 90); const s = g.createRadialGradient(x, y, 0, x, y, r); s.addColorStop(0, 'rgba(90,10,16,.35)'); s.addColorStop(1, 'rgba(90,10,16,0)'); g.fillStyle = s; g.fillRect(x - r, y - r, r * 2, r * 2); }
+  // drain grate
+  const dx = w / 2, dy = sy + sh - 22; g.fillStyle = '#0a0909'; roundRectPath(g, dx - 50, dy - 8, 100, 16, 8); g.fill();
+  g.strokeStyle = '#3a3634'; for (let i = -42; i <= 42; i += 7) { g.beginPath(); g.moveTo(dx + i, dy - 6); g.lineTo(dx + i, dy + 6); g.stroke(); }
+  // hazard stripes top
+  g.save(); roundRectPath(g, sx, sy, sw, 10, 4); g.clip();
+  for (let x = sx - 20; x < sx + sw; x += 20) { g.fillStyle = '#d6a21c'; g.beginPath(); g.moveTo(x, sy); g.lineTo(x + 10, sy); g.lineTo(x + 20, sy + 10); g.lineTo(x + 10, sy + 10); g.fill(); }
+  g.restore();
+  // bolts
+  g.fillStyle = '#6a6460'; for (const [x, y] of [[sx + 12, sy + 22], [sx + sw - 12, sy + 22], [sx + 12, sy + sh - 12], [sx + sw - 12, sy + sh - 12]]) { g.beginPath(); g.arc(x, y, 4, 0, 6.28); g.fill(); }
+  // vignette
+  const v = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .3, w / 2, h / 2, Math.max(w, h) * .75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)'); g.fillStyle = v; g.fillRect(0, 0, w, h);
+  T.bg = c;
+}
+function roundRectPath(g, x, y, w, h, r) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); }
+const easeOutBack = x => 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+
+function renderTable() {
+  const c = T.ctx, w = T.w, h = T.h;
+  c.setTransform(T.dpr, 0, 0, T.dpr, 0, 0);
+  c.drawImage(T.bg, 0, 0, w, h);
+  c.save();
+  if (T.shake > .2) c.translate(rand(-T.shake, T.shake), rand(-T.shake, T.shake));
+  if (T.mon) {
+    let off = 0;
+    if (T.state === 'arriving') off = -(1 - easeOutBack(clamp(T.anim, 0, 1))) * w;
+    if (T.state === 'leaving') off = Math.pow(T.anim, 2) * w * 1.1;
+    c.save(); c.translate(off, 0);
+    drawMonster(c);
+    c.restore();
+  }
+  if (T.pull) drawPull(c);
+  if (T.mon && ST.droneLvl > 0 && T.state === 'working') drawDrone(c);
+  drawParticles(c);
+  // brush cursor
+  if (T.ptr.inside && !T.held) {
+    const sc = scale(); const hov = hoverPart();
+    c.lineWidth = 1.5;
+    if (T.pull) { /* drawn in pull */ }
+    else if (hov) { c.strokeStyle = '#a6ff3d'; c.setLineDash([4, 4]); c.beginPath(); const [x, y, r] = partPx(hov); c.arc(x, y, r * 1.35, 0, 6.28); c.stroke(); c.setLineDash([]); }
+    else { c.strokeStyle = T.ptr.down ? 'rgba(255,201,60,.9)' : 'rgba(255,255,255,.35)'; c.beginPath(); c.arc(T.ptr.x, T.ptr.y, ST.brush * sc, 0, 6.28); c.stroke(); }
+  }
+  c.restore();
+}
+function drawMonster(c) {
+  const m = T.mon, def = m.def, { ox, oy, size } = T.area; const cs = size / def.grid;
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,.45)';
+  for (const e of def.body) { c.beginPath(); c.ellipse(ox + e.x * size + 8, oy + e.y * size + 12, e.rx * size, e.ry * size, e.rot || 0, 0, 6.28); c.fill(); }
+  // flesh
+  c.save(); c.beginPath();
+  for (const e of def.body) { c.moveTo(ox + e.x * size + e.rx * size, oy + e.y * size); c.ellipse(ox + e.x * size, oy + e.y * size, e.rx * size, e.ry * size, e.rot || 0, 0, 6.28); }
+  c.clip();
+  const fg = c.createRadialGradient(ox + size / 2, oy + size / 2, 0, ox + size / 2, oy + size / 2, size * .5); fg.addColorStop(0, '#8a1c2a'); fg.addColorStop(1, '#3a0810');
+  c.fillStyle = fg; c.fillRect(ox, oy, size, size);
+  c.strokeStyle = 'rgba(255,110,120,.22)'; c.lineWidth = 2;
+  for (const v of m.veins) { c.beginPath(); c.moveTo(ox + v[0] * size, oy + v[1] * size); c.quadraticCurveTo(ox + v[2] * size, oy + v[3] * size, ox + v[4] * size, oy + v[5] * size); c.stroke(); }
+  c.fillStyle = 'rgba(255,220,200,.06)'; for (let i = 0; i < 30; i++) { c.beginPath(); c.arc(ox + ((i * 97) % 100) / 100 * size, oy + ((i * 61) % 100) / 100 * size, 3, 0, 6.28); c.fill(); }
+  c.restore();
+  // parts (sockets + organs)
+  for (const p of m.parts) {
+    const [x, y, r] = partPx(p);
+    c.fillStyle = 'rgba(20,0,4,.75)'; c.beginPath(); c.arc(x, y, r * 1.15, 0, 6.28); c.fill();
+    if (p.extracted || (T.pull && T.pull.part === p)) continue;
+    drawPartIcon(c, p, x, y, r, p.exposed);
+  }
+  // plates (clipped to the body silhouette so the monster reads organic, not blocky)
+  c.save(); c.beginPath();
+  for (const e of def.body) { c.moveTo(ox + e.x * size + e.rx * size * 1.04, oy + e.y * size); c.ellipse(ox + e.x * size, oy + e.y * size, e.rx * size * 1.04, e.ry * size * 1.04, e.rot || 0, 0, 6.28); }
+  c.clip();
+  const hasRR = !!c.roundRect;
+  for (const cell of m.cells) {
+    if (cell.cleared) continue;
+    const x = ox + cell.i * cs, y = oy + cell.j * cs;
+    const maxHp = def.plateHp * def.layers[cell.layer].hp; const frac = clamp(cell.hp / maxHp, 0, 1);
+    const col = m.layerCols[cell.layer];
+    c.fillStyle = shade(col, .82 + cell.seed * .3);
+    c.beginPath(); if (hasRR) c.roundRect(x + .6, y + .6, cs - 1.2, cs - 1.2, cs * .28); else c.rect(x + .6, y + .6, cs - 1.2, cs - 1.2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.14)'; c.fillRect(x + cs * .18, y + cs * .1, cs * .64, cs * .14);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(x + cs * .12, y + cs * .78, cs * .76, cs * .14);
+    if (cell.layer < def.layers.length - 1) { c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.arc(x + cs * .25, y + cs * .5, cs * .06, 0, 6.28); c.arc(x + cs * .75, y + cs * .5, cs * .06, 0, 6.28); c.fill(); }
+    if (frac < .999) {
+      c.fillStyle = `rgba(0,0,0,${(1 - frac) * .38})`; c.fillRect(x + 1, y + 1, cs - 2, cs - 2);
+      c.strokeStyle = 'rgba(0,0,0,.65)'; c.lineWidth = 1.2; c.beginPath();
+      const n = frac < .33 ? 3 : frac < .66 ? 2 : 1;
+      for (let k = 0; k < n; k++) { const cr = cell.cracks[k]; c.moveTo(x + cr[0] * cs, y + cr[1] * cs); c.lineTo(x + cr[2] * cs, y + cr[3] * cs); }
+      c.stroke();
+    }
+    if (cell.flash > 0) { c.fillStyle = `rgba(255,255,230,${cell.flash * .45})`; c.fillRect(x + 1, y + 1, cs - 2, cs - 2); }
+  }
+  c.restore();
+  // eyes
+  for (const [ex, ey, er] of def.eyes) {
+    const ci = Math.floor(ex * def.grid), cj = Math.floor(ey * def.grid);
+    const cell = m.cells.find(q => q.i === ci && q.j === cj); if (!cell || cell.cleared) continue;
+    const x = ox + ex * size, y = oy + ey * size, r = er * size;
+    if (m.blink > 0) { c.strokeStyle = '#000'; c.lineWidth = 2; c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.stroke(); continue; }
+    c.fillStyle = m.variant === 'normal' ? '#f4efe0' : (VARIANTS[m.variant].color); c.beginPath(); c.arc(x, y, r, 0, 6.28); c.fill();
+    const a = Math.atan2(T.ptr.y - y, T.ptr.x - x); const pd = Math.min(r * .45, Math.hypot(T.ptr.x - x, T.ptr.y - y) * .05);
+    c.fillStyle = '#120808'; c.beginPath(); c.arc(x + Math.cos(a) * pd, y + Math.sin(a) * pd, r * .5, 0, 6.28); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x + Math.cos(a) * pd - r * .15, y + Math.sin(a) * pd - r * .18, r * .14, 0, 6.28); c.fill();
+  }
+  // exposed glow rings
+  for (const p of m.parts) {
+    if (!p.exposed || p.extracted || (T.pull && T.pull.part === p)) continue;
+    const [x, y, r] = partPx(p); const pulse = .5 + .5 * Math.sin(T.time * 6 + p.idx);
+    c.strokeStyle = p.hurt > 0 ? '#ff4d4d' : (VARIANTS[m.variant].color || '#a6ff3d'); c.lineWidth = 2 + pulse * 2; c.globalAlpha = .5 + pulse * .5;
+    c.beginPath(); c.arc(x, y, r * (1.25 + pulse * .12), 0, 6.28); c.stroke(); c.globalAlpha = 1;
+    drawPartIcon(c, p, x, y, r, true);
+    if (p.nick > 1) { c.fillStyle = gradeColor(p.nick); c.font = `900 ${Math.max(10, r * .45)}px JetBrains Mono,monospace`; c.textAlign = 'center'; c.fillText(gradeOf(p.nick) === 'S' ? '' : '⚠ ' + gradeOf(p.nick), x, y - r * 1.45); }
+    if (ST.pickerLvl > 0) { const k = p.exposedT / (BAL.pickerBaseDelay / ST.pickerLvl); c.strokeStyle = '#38e8ff'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r * 1.6, -Math.PI / 2, -Math.PI / 2 + k * 6.28); c.stroke(); }
+  }
+}
+function gradeColor(stress) { return QUALITY[gradeOf(stress)].color; }
+function drawPartIcon(c, p, x, y, r, lit) {
+  const vcol = VARIANTS[T.mon.variant].color; const wob = p.wob > 0 ? Math.sin(T.time * 40) * p.wob * r * .12 : 0;
+  if (lit) { const g = c.createRadialGradient(x, y, 0, x, y, r * 1.5); g.addColorStop(0, (vcol || '#ffe08a') + '88'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 1.5, 0, 6.28); c.fill(); }
+  c.font = `${r * 1.55}px ${EMOJI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.globalAlpha = lit ? 1 : .55; c.fillText(PARTS[p.partId].icon, x + wob, y + 1); c.globalAlpha = 1;
+  if (p.nick > 0 && lit) { c.strokeStyle = `rgba(255,40,60,${Math.min(.9, p.nick / 60)})`; c.lineWidth = 1.5; c.beginPath(); for (let k = 0; k < Math.min(5, 1 + p.nick / 15); k++) { const a = k * 1.7 + p.idx; c.moveTo(x + Math.cos(a) * r * .2, y + Math.sin(a) * r * .2); c.lineTo(x + Math.cos(a + .4) * r * .8, y + Math.sin(a + .4) * r * .8); } c.stroke(); }
+  c.textBaseline = 'alphabetic';
+}
+function drawPull(c) {
+  const Pl = T.pull, p = Pl.part; const [sx, sy, r] = partPx(p);
+  const dx = T.ptr.x - sx, dy = T.ptr.y - sy; const dist = Math.hypot(dx, dy); const pd = BAL.pullDist * T.area.size;
+  const k = clamp(dist / pd, 0, 1);
+  const px = sx + dx * .65, py = sy + dy * .65;
+  // tendons
+  const nx = -dy / (dist || 1), ny = dx / (dist || 1);
+  const sc = gradeColor(Pl.stress);
+  for (let i = -2; i <= 2; i++) {
+    const ax = sx + nx * i * r * .3, ay = sy + ny * i * r * .3; const bx = px + nx * i * r * .18, by = py + ny * i * r * .18;
+    const sag = Math.sin(T.time * 30 + i) * (1 + Pl.stress * .05);
+    c.strokeStyle = i % 2 ? '#e0566a' : '#b5283d'; c.lineWidth = Math.max(.6, (3.4 - k * 2.6) * (1 - Pl.stress / 140));
+    c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo((ax + bx) / 2 + nx * sag * 4, (ay + by) / 2 + ny * sag * 4, bx, by); c.stroke();
+  }
+  // part
+  c.save(); c.translate(px, py); c.rotate(Math.sin(T.time * 25) * Pl.stress * .002);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, r * 1.7); g.addColorStop(0, sc + '66'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.7, 0, 6.28); c.fill();
+  c.font = `${r * 1.75}px ${EMOJI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(PARTS[p.partId].icon, 0, 1); c.textBaseline = 'alphabetic';
+  c.restore();
+  // stress ring
+  c.lineWidth = 5; c.strokeStyle = 'rgba(0,0,0,.6)'; c.beginPath(); c.arc(px, py, r * 1.45, 0, 6.28); c.stroke();
+  c.strokeStyle = sc; c.beginPath(); c.arc(px, py, r * 1.45, -Math.PI / 2, -Math.PI / 2 + clamp(Pl.stress / 100, 0, 1) * 6.28); c.stroke();
+  // distance ring (progress)
+  c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,.5)'; c.setLineDash([3, 5]); c.beginPath(); c.arc(sx, sy, pd, 0, 6.28); c.stroke(); c.setLineDash([]);
+  // grade preview
+  c.font = `900 ${Math.max(16, r * .9)}px Bungee,Impact,sans-serif`; c.textAlign = 'center'; c.fillStyle = sc; c.strokeStyle = '#000'; c.lineWidth = 4;
+  const gl = gradeOf(Pl.stress); c.strokeText(gl === 'X' ? '✖' : gl, px, py - r * 1.75); c.fillText(gl === 'X' ? '✖' : gl, px, py - r * 1.75);
+  // speed gauge
+  const safe = BAL.safeSpeed * ST.safeSpeed * scale(); const gw = 90, gh = 7, gx = px - gw / 2, gy = py + r * 1.75;
+  c.fillStyle = '#000c'; c.fillRect(gx - 2, gy - 2, gw + 4, gh + 4);
+  c.fillStyle = '#1f4d1a'; c.fillRect(gx, gy, gw * .6 * .55, gh); c.fillStyle = '#3d9c2a'; c.fillRect(gx + gw * .6 * .55, gy, gw * .6 * .45, gh);
+  c.fillStyle = '#6b1d22'; c.fillRect(gx + gw * .6, gy, gw * .4, gh);
+  const nv = clamp(T.ptr.vs / safe * .6, 0, 1); c.fillStyle = '#fff'; c.fillRect(gx + nv * gw - 1.5, gy - 3, 3, gh + 6);
+  c.font = '700 9px JetBrains Mono,monospace'; c.fillStyle = '#ccc'; c.fillText(G.lang === 'ja' ? '速度' : 'SPEED', px, gy + gh + 11);
+}
+function drawDrone(c) {
+  const D = T.drone, { ox, oy, size } = T.area; const x = ox + D.x * size, y = oy + D.y * size - 18 + Math.sin(T.time * 3) * 3;
+  if (D.laser && D.target) { const [cx, cy, cs] = cellPx(D.target); c.strokeStyle = `rgba(56,232,255,${.5 + Math.random() * .5})`; c.lineWidth = 2 + Math.random() * 2; c.beginPath(); c.moveTo(x, y + 6); c.lineTo(cx + cs / 2, cy + cs / 2); c.stroke(); }
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(x + 6, y + 30, 14, 5, 0, 0, 6.28); c.fill();
+  c.fillStyle = '#2b3a40'; c.strokeStyle = '#38e8ff'; c.lineWidth = 1.5; c.beginPath(); if (c.roundRect) c.roundRect(x - 10, y - 5, 20, 12, 4); else c.rect(x - 10, y - 5, 20, 12); c.fill(); c.stroke();
+  c.fillStyle = '#38e8ff'; c.beginPath(); c.arc(x, y + 1, 2.5, 0, 6.28); c.fill();
+  c.strokeStyle = 'rgba(200,240,255,.6)'; c.lineWidth = 1.5; const s = Math.sin(T.time * 60) * 9;
+  for (const ax of [-12, 12]) { c.beginPath(); c.moveTo(x + ax - s, y - 7); c.lineTo(x + ax + s, y - 7); c.stroke(); }
+  c.font = '700 8px JetBrains Mono,monospace'; c.fillStyle = '#38e8ff'; c.textAlign = 'center'; c.fillText('LV' + ST.droneLvl, x, y - 12);
+}
+function drawParticles(c) {
+  for (const q of T.particles) {
+    const a = clamp(q.life / q.max, 0, 1);
+    if (q.kind === 'ring') { const k = 1 - a; c.strokeStyle = q.color; c.globalAlpha = a; c.lineWidth = 3; c.beginPath(); c.arc(q.x, q.y, lerp(q.r0, q.r1, k), 0, 6.28); c.stroke(); c.globalAlpha = 1; continue; }
+    c.globalAlpha = Math.min(1, a * 1.5); c.fillStyle = q.color;
+    if (q.kind === 'chip') { c.save(); c.translate(q.x, q.y); c.rotate(q.rot); c.fillRect(-q.size / 2, -q.size / 2, q.size, q.size * .7); c.restore(); }
+    else if (q.kind === 'spark') { c.strokeStyle = q.color; c.lineWidth = q.size; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x - q.vx * .03, q.y - q.vy * .03); c.stroke(); }
+    else { c.beginPath(); c.arc(q.x, q.y, q.size, 0, 6.28); c.fill(); }
+  }
+  c.globalAlpha = 1;
+}
+function hoverPart() {
+  if (!T.mon || T.state !== 'working') return null;
+  for (const p of T.mon.parts) { if (!p.exposed || p.extracted) continue; const [x, y, r] = partPx(p); if (Math.hypot(T.ptr.x - x, T.ptr.y - y) < r * 1.35) return p; }
+  return null;
+}
+function tableToClient(x, y) { const r = T.cv.getBoundingClientRect(); return [r.left + x, r.top + y]; }
+
+/* ============================ 5. UI ============================ */
+function centerOf(el) { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
+function popAt(x, y, html, cls) { const d = document.createElement('div'); d.className = 'pop ' + cls; d.innerHTML = html; d.style.left = x + 'px'; d.style.top = y + 'px'; $('#fx').appendChild(d); setTimeout(() => d.remove(), 1900); }
+function flash(color) { const f = $('#flash'); f.style.background = color; f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, easing: 'ease-out' }); }
+function bumpMoney() { const el = $('#hMoney'); el.classList.add('bump'); clearTimeout(bumpMoney.t); bumpMoney.t = setTimeout(() => el.classList.remove('bump'), 90); }
+function coinFly(from, n) {
+  const to = centerOf($('#hMoney'));
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('div'); d.className = 'coin'; d.textContent = '🪙'; d.style.left = from[0] + 'px'; d.style.top = from[1] + 'px'; $('#fx').appendChild(d);
+    const mx = rand(-80, 80), my = rand(-90, -20);
+    const an = d.animate([{ transform: 'translate(-50%,-50%) scale(.6)' }, { transform: `translate(calc(-50% + ${mx}px),calc(-50% + ${my}px)) scale(1.1)`, offset: .3 }, { transform: `translate(calc(-50% + ${to[0] - from[0]}px),calc(-50% + ${to[1] - from[1]}px)) scale(.5)` }], { duration: 650 + i * 35, easing: 'cubic-bezier(.5,0,.8,.6)', delay: i * 25 });
+    an.onfinish = () => { d.remove(); bumpMoney(); if (i % 3 === 0) Sfx.tick(); };
+  }
+}
+function showBreaking(def, rumor) {
+  const b = $('#breaking'); b.classList.toggle('rumor', rumor);
+  b.querySelector('.bk').textContent = rumor ? t('rumor') : t('breaking');
+  b.querySelector('.bh').textContent = L(def.headline);
+  const up = def.mult > 1;
+  b.querySelector('.be').innerHTML = `<span class="${up ? 'up' : 'dn'}">${newsTargetLabel(def)} ${fmtX(def.mult)} ${up ? '▲▲' : '▼▼'}</span>`;
+  b.classList.add('show'); clearTimeout(showBreaking.t); showBreaking.t = setTimeout(() => b.classList.remove('show'), 4200);
+  if (rumor) Sfx.rumor();
+}
+function updateTicker() {
+  const items = NEWS_RT.active.map(a => `▶ ${L(a.def.headline)} [${newsTargetLabel(a.def)} ${fmtX(a.def.mult)}]`);
+  if (NEWS_RT.leaked && NEWS_RT.pending) items.push(`📡 ${L(NEWS_RT.pending.headline)} (${G.lang === 'ja' ? '噂' : 'rumor'})`);
+  $('#tickerText').textContent = items.length ? items.join('     ✦     ') : t('marketCalm');
+}
+function renderActiveNews() {
+  let h = '';
+  for (const a of NEWS_RT.active) h += `<span class="nchip ${a.def.mult > 1 ? 'up' : 'dn'}">${newsTargetLabel(a.def)} ${fmtX(a.def.mult)} · ${Math.ceil(a.t)}s<i style="width:${a.t / a.max * 100}%"></i></span>`;
+  if (NEWS_RT.leaked && NEWS_RT.pending) h += `<span class="nchip rumor">📡 ${newsTargetLabel(NEWS_RT.pending)} ${fmtX(NEWS_RT.pending.mult)} · ${Math.ceil(NEWS_RT.next / ST.newsFreqMult)}s</span>`;
+  $('#activeNews').innerHTML = h;
+}
+function renderMonTag() {
+  if (!T.mon) { $('#monTag').innerHTML = ''; return; }
+  const d = T.mon.def, v = T.mon.variant;
+  $('#monTag').innerHTML = `<span>${d.emoji} ${L(d.name).toUpperCase()}</span><span class="tier">T${d.tier}</span>` + (v !== 'normal' ? `<span class="vbadge" style="background:${VARIANTS[v].color}">${L(VARIANTS[v].name).toUpperCase()} ×${VARIANTS[v].mult}</span>` : '') + `<span class="tier">· ${d.layers.map(l => L(l.name)).join(' › ')}</span>`;
+}
+function renderHud() {
+  if (T.mon) {
+    const cl = T.mon.cells.filter(c => c.cleared).length; const pct = cl / T.mon.total * 100;
+    $('#pPlates').textContent = pct.toFixed(0) + '%'; $('#barPlates').style.width = pct + '%';
+    $('#pParts').textContent = T.mon.parts.filter(p => p.extracted).length + '/' + T.mon.parts.length;
+  }
+  const cb = $('#combo');
+  if (T.combo >= 3) { cb.style.opacity = 1; const cm = 1 + Math.min(T.combo, BAL.comboCap * ST.comboCapMult) * BAL.comboStep; cb.innerHTML = `×${T.combo}<small>COMBO · SCRAP ${fmtX(cm)}</small>`; cb.style.transform = `scale(${1 + Math.min(.4, T.combo * .006)})`; }
+  else cb.style.opacity = 0;
+  // hint
+  let hint = '';
+  if (T.held) hint = t('hintDrop');
+  else if (T.mon && T.state === 'working') {
+    const anyExposed = T.mon.parts.some(p => p.exposed && !p.extracted);
+    if (T.hurtT > 0 && G.stats.extracted < 12) hint = t('hintCare');
+    else if (anyExposed && G.stats.extracted < 4) hint = t('hintPull');
+    else if (G.stats.plates < 40) hint = t('hintScrape');
+  }
+  const he = $('#hint'); he.style.opacity = hint ? 1 : 0; if (hint && he.textContent !== hint) he.textContent = hint;
+  const hb = $('#haulBtn'); const done = T.mon && T.mon.parts.every(p => p.extracted);
+  hb.textContent = done ? t('haulNext') : t('haul'); hb.classList.toggle('ready', !!done);
+}
+function renderToolStats() {
+  const s = ST; const pd = s.pickerLvl ? (BAL.pickerBaseDelay / s.pickerLvl).toFixed(1) + 's' : '—';
+  $('#toolStats').innerHTML = [
+    ['🔪 ' + t('stBlade'), fmtX(s.blade)], ['🧹 ' + t('stBrush'), s.brush.toFixed(0) + 'px'],
+    ['🧤 ' + t('stSafe'), fmtX(s.safeSpeed)], ['✂️ ' + t('stStress'), fmtX(s.stressMult)],
+    ['🧊 ' + t('stFridge'), s.fridgeSlots], ['❄️ ' + t('stDecay'), fmtX(s.decayMult)],
+    ['🛸 ' + t('stDrone'), s.droneLvl ? 'LV' + s.droneLvl : '—'], ['🦾 ' + t('stPicker'), pd],
+  ].map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
+}
+function renderRelicSlots() {
+  let h = '';
+  for (let i = 0; i < ST.relicSlots; i++) { const id = G.relics[i]; if (id) { const r = RELIC_BY_ID[id]; h += `<div class="rslot on ${r.rarity}" data-tip="relic:${id}">${r.icon}</div>`; } else h += `<div class="rslot" data-tip="txt:${t('emptySlot')}"></div>`; }
+  $('#relicSlots').innerHTML = h; $('#relicCount').textContent = `${G.relics.length}/${ST.relicSlots}`;
+}
+
+// ---- fridge
+let fridgeEls = new Map();
+function renderFridge(newUid) {
+  const g = $('#fridgeGrid'); let h = '';
+  for (let i = 0; i < ST.fridgeSlots; i++) {
+    const it = G.fridge[i];
+    if (it) { const p = PARTS[it.partId]; h += `<div class="fitem v-${it.variant}${it.uid === newUid ? ' new' : ''}" data-uid="${it.uid}" data-tip="fridge:${it.uid}"><span class="fico">${p.icon}</span><span class="fq q${it.q}">${it.perfect ? 'S★' : QUALITY[it.q].label}</span><span class="fprice"></span><div class="fbar"><i></i></div></div>`; }
+    else h += '<div class="fslot"></div>';
+  }
+  g.innerHTML = h; fridgeEls = new Map(); g.querySelectorAll('.fitem').forEach(el => fridgeEls.set(+el.dataset.uid, el));
+  $('#fridgeCount').textContent = `${G.fridge.length}/${ST.fridgeSlots}`;
+  refreshFridgePrices();
+}
+function refreshFridgePrices() {
+  for (const it of G.fridge) {
+    const el = fridgeEls.get(it.uid); if (!el) continue;
+    el.querySelector('.fprice').textContent = money(salePrice(it).total);
+    const b = el.querySelector('.fbar i'); b.style.width = Math.max(0, it.fresh) + '%'; b.style.background = it.fresh > 60 ? '#a6ff3d' : it.fresh > 25 ? '#ffc93c' : '#ff4d4d';
+    el.classList.toggle('rot', it.fresh <= 0);
+  }
+}
+function updateFreshness(dt) {
+  for (const it of G.fridge) { if (it.fresh <= 0) continue; it.fresh -= PARTS[it.partId].decay * VARIANTS[it.variant].decay * ST.decayMult * dt; if (it.fresh < 0) it.fresh = 0; }
+}
+
+// ---- market list / chart
+let selPart = 'slime_core', mktRows = new Map(), mktKey = '';
+function buildMarketList() {
+  const ups = unlockedParts(); mktKey = ups.join(',');
+  if (!ups.includes(selPart)) selPart = ups[ups.length - 1];
+  const list = $('#mktList'); let h = '';
+  for (const pid of [...ups].reverse()) { const p = PARTS[pid]; h += `<div class="mrow" data-part="${pid}"><span class="ico">${p.icon}</span><span class="nm">${L(p.name)}</span><span class="px"></span><span class="arr"></span><span class="mul"></span><button class="sellall" data-sell="${pid}"></button></div>`; }
+  list.innerHTML = h; mktRows = new Map(); list.querySelectorAll('.mrow').forEach(el => mktRows.set(el.dataset.part, el));
+  refreshMarketRows(); drawChart();
+}
+function refreshMarketRows() {
+  const cnt = {}; for (const it of G.fridge) cnt[it.partId] = (cnt[it.partId] || 0) + 1;
+  for (const [pid, el] of mktRows) {
+    const k = MK[pid]; const [arr, cls] = trendOf(pid);
+    const unit = salePrice({ partId: pid, variant: 'normal', q: 'A', perfect: false, fresh: 100 }).total;
+    el.querySelector('.px').textContent = money(unit);
+    const a = el.querySelector('.arr'); a.textContent = arr; a.className = 'arr ' + cls;
+    const m = el.querySelector('.mul'); m.textContent = fmtX(k.m); m.className = 'mul ' + (k.m > 1.05 ? 'up' : k.m < .95 ? 'dn' : 'flat');
+    const b = el.querySelector('.sellall'); const n = cnt[pid] || 0; b.disabled = !n; b.textContent = n ? `${t('sell')} ${n}` : '—';
+    el.classList.toggle('sel', pid === selPart);
+    if (arr === '↑↑' && el._arr !== '↑↑') { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    el._arr = arr;
+  }
+}
+function drawChart() {
+  const cv = $('#chart'); const r = cv.getBoundingClientRect(); if (!r.width) return;
+  const dpr = Math.min(2, devicePixelRatio || 1); if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); const w = r.width, h = r.height;
+  c.clearRect(0, 0, w, h);
+  const k = MK[selPart]; if (!k) return; const hist = k.hist;
+  let lo = Math.min(1, ...hist), hi = Math.max(1, ...hist); const padv = (hi - lo) * .15 + .05; lo -= padv; hi += padv;
+  const X = i => 4 + i / (BAL.marketHist - 1) * (w - 48), Y = v => h - 6 - (v - lo) / (hi - lo) * (h - 22);
+  const off = BAL.marketHist - hist.length;
+  c.strokeStyle = 'rgba(56,232,255,.07)'; c.lineWidth = 1; for (let i = 0; i < 6; i++) { const y = 16 + i * (h - 22) / 5; c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+  // news marks
+  for (const mk of k.marks) { const idx = hist.length - 1 - (mkTick - mk.tick); if (idx < 0) continue; const x = X(idx + off); c.strokeStyle = mk.up ? 'rgba(166,255,61,.5)' : 'rgba(255,77,77,.5)'; c.setLineDash([2, 3]); c.beginPath(); c.moveTo(x, 12); c.lineTo(x, h); c.stroke(); c.setLineDash([]); c.fillStyle = c.strokeStyle; c.font = '9px sans-serif'; c.fillText('📰', x - 5, 12); }
+  // baseline
+  c.strokeStyle = 'rgba(255,255,255,.25)'; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(0, Y(1)); c.lineTo(w - 44, Y(1)); c.stroke(); c.setLineDash([]);
+  const last = hist[hist.length - 1]; const up = last >= hist[Math.max(0, hist.length - 6)];
+  const col = up ? '#a6ff3d' : '#ff5a66';
+  c.beginPath(); hist.forEach((v, i) => { const x = X(i + off), y = Y(v); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+  const lg = c.createLinearGradient(0, 0, 0, h); lg.addColorStop(0, up ? 'rgba(166,255,61,.28)' : 'rgba(255,90,102,.28)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
+  c.save(); c.lineTo(X(hist.length - 1 + off), h); c.lineTo(X(off), h); c.closePath(); c.fillStyle = lg; c.fill(); c.restore();
+  c.beginPath(); hist.forEach((v, i) => { const x = X(i + off), y = Y(v); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+  c.strokeStyle = col; c.lineWidth = 2; c.shadowColor = col; c.shadowBlur = 8; c.stroke(); c.shadowBlur = 0;
+  const lx = X(hist.length - 1 + off), ly = Y(last); c.fillStyle = col; c.beginPath(); c.arc(lx, ly, 3.5, 0, 6.28); c.fill();
+  c.font = '800 11px JetBrains Mono,monospace'; c.fillStyle = col; c.textAlign = 'left'; c.fillText(fmtX(last), lx + 6, ly + 4);
+  c.fillStyle = 'rgba(255,255,255,.35)'; c.font = '9px JetBrains Mono,monospace'; c.fillText('×1', w - 40, Y(1) + 3);
+  const p = PARTS[selPart]; const unit = salePrice({ partId: selPart, variant: 'normal', q: 'A', perfect: false, fresh: 100 }).total;
+  $('#chartLbl').innerHTML = `${p.icon} ${L(p.name)} <span style="color:var(--mute)">· ${p.tags.map(x => L(TAGS[x])).join('/')} · ${t('unit')}</span> <span style="color:var(--gold)">${money(unit)}</span>`;
+}
+
+// ---- receipt
+function renderReceipt(r, total, count) {
+  let h = '', i = 0;
+  for (const ln of r.lines) {
+    if (ln.kind !== 'base' && Math.abs(ln.v - 1) < 0.005) continue;
+    if (i) h += `<span class="op" style="animation-delay:${i * 55}ms">×</span>`;
+    h += `<span class="chip ${ln.kind}" style="animation-delay:${i * 55}ms">${ln.kind === 'base' ? money(ln.v) : ln.label + ' ' + fmtX(ln.v).slice(1)}</span>`; i++;
+  }
+  h += `<span class="op" style="animation-delay:${i * 55}ms">=</span><span class="total" style="animation-delay:${i * 55 + 60}ms">${money(total)}</span>`;
+  if (count > 1) h += `<span class="cnt">(${count} ${G.lang === 'ja' ? '個' : 'items'})</span>`;
+  $('#receipt').innerHTML = h;
+}
+
+// ---- tabs
+let curTab = 'tool', tabsDirty = false;
+function markTabsDirty() { tabsDirty = true; }
+function markTabNotify(tab) { if (tab !== curTab) $(`#tabs [data-tab="${tab}"]`).classList.add('notify'); }
+function renderTab() {
+  tabsDirty = false;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === curTab));
+  $(`#tabs [data-tab="${curTab}"]`).classList.remove('notify');
+  const body = $('#tabBody'); const st = body.scrollTop; let h = '';
+  if (curTab === 'tool' || curTab === 'facility') {
+    for (const u of UPGRADES.filter(u => u.cat === curTab)) {
+      const lv = G.up[u.id] || 0; const maxed = lv >= u.max; const c = maxed ? 0 : upCost(u, lv);
+      h += `<div class="ucard"><div class="uico">${u.icon}</div><div><div class="un">${L(u.name)}<span class="lv">LV ${lv}/${u.max}</span></div><div class="ud">${L(u.desc)}</div><div class="uv">${upValueText(u, lv)}</div></div>
+        <button class="buy ${maxed ? 'max' : ''}" data-up="${u.id}" data-cost="${c}">${maxed ? t('maxed') : money(c)}</button></div>`;
+    }
+  } else if (curTab === 'relic') {
+    h += `<div class="sect">${t('equipped')} <span class="mono">${G.relics.length}/${ST.relicSlots}</span></div>`;
+    if (!G.relics.length) h += `<div class="ud" style="color:var(--dim);padding:4px">—</div>`;
+    for (const id of G.relics) { const r = RELIC_BY_ID[id]; h += relicCard(r, `<button class="x" data-rsell="${id}">${t('sell')} +${money(relicPrice(id) * BAL.relicRefund)}</button>`); }
+    h += `<div class="sect">${t('shop')}<span class="r"><button class="buy" data-reroll="1" data-cost="${rerollPrice()}" style="min-width:0">${t('reroll')} ${money(rerollPrice())}</button></span></div>`;
+    for (const id of G.shop.offers) { const r = RELIC_BY_ID[id]; const c = relicPrice(id); h += relicCard(r, `<button class="buy" data-relic="${id}" data-cost="${c}">${money(c)}</button>`); }
+  } else if (curTab === 'orders') {
+    h += `<div class="sect">${t('orders')}</div>`;
+    for (const o of G.orders) {
+      const p = PARTS[o.partId]; const have = orderMatches(o).length; const ok = have >= o.count;
+      h += `<div class="ocard"><div class="oico">${p.icon}</div><div><div class="ot">${o.count}× ${o.variant ? `<span style="color:${VARIANTS[o.variant].color}">${L(VARIANTS[o.variant].name)}</span> ` : ''}${L(p.name)} <span class="q${o.minQ}">[${o.minQ}+]</span></div>
+        <div class="os">${t('have')} <b style="color:${ok ? 'var(--acid)' : 'var(--ink)'}">${have}/${o.count}</b> · ${Math.ceil(o.t)}s</div><div class="orw">${t('reward')}: ${money(o.reward * G.ledger)}${o.relic ? ' + 🎁 RELIC' : ''}</div></div>
+        <div class="ob"><button class="buy ${ok ? '' : 'no'}" data-deliver="${o.id}">${t('deliver')}</button><button class="x" data-odrop="${o.id}">✕</button></div><div class="otime" style="width:${o.t / o.max * 100}%"></div></div>`;
+    }
+  } else if (curTab === 'codex') {
+    const tot = PART_IDS.length * VARIANT_ORDER.length; const n = codexCount();
+    h += `<div class="sect">${t('codex')} <span class="r mono" style="color:var(--violet)">${n}/${tot} · ${(n / tot * 100).toFixed(1)}%</span></div><div class="cbar"><i style="width:${n / tot * 100}%"></i></div><div class="ud" style="color:var(--mute);font-size:10.5px">${t('codexBonus')} → <b style="color:var(--violet)">${fmtX(codexMult())}</b></div>`;
+    h += `<div class="crow" style="color:var(--mute);font-size:9px"><span></span>${VARIANT_ORDER.map(v => `<span style="text-align:center;color:${VARIANTS[v].color || 'var(--mute)'}">${L(VARIANTS[v].name).slice(0, 3)}</span>`).join('')}</div>`;
+    for (const m of MONSTERS) {
+      const un = m.dock <= ST.dock; const ps = [...new Set(m.parts.map(p => p.part))];
+      h += `<div class="codexMon"><div class="ch"><span>${un ? m.emoji : '❔'} ${un ? L(m.name) : '???'}</span><span class="mono" style="color:var(--dim)">T${m.tier}${un ? '' : ' · ' + t('locked')}</span></div>`;
+      for (const pid of ps) {
+        const p = PARTS[pid];
+        h += `<div class="crow"><span style="color:${un ? 'var(--ink)' : 'var(--dim)'}">${un ? L(p.name) : '???'}</span>` + VARIANT_ORDER.map(v => { const got = G.codex[pid + '|' + v]; const col = VARIANTS[v].color || '#bbb'; return got ? `<span class="cc got" style="color:${col}" data-tip="txt:${L(VARIANTS[v].name)} ${L(p.name)}">${p.icon}</span>` : `<span class="cc lock">?</span>`; }).join('') + `</div>`;
+      }
+      h += `</div>`;
+    }
+  }
+  body.innerHTML = h; body.scrollTop = st; refreshAfford();
+}
+function relicCard(r, btn) { return `<div class="rcard ${r.rarity}"><div class="rico">${r.icon}</div><div><div class="rn">${L(r.name)}<span class="rr ${r.rarity}">${r.rarity.toUpperCase()}</span></div><div class="rd">${L(r.desc)}</div></div>${btn}</div>`; }
+function upValueText(u, lv) {
+  const e = u.eff; const now = e.op === 'mul' ? Math.pow(e.v, lv) : e.v * lv; const nx = e.op === 'mul' ? Math.pow(e.v, lv + 1) : e.v * (lv + 1);
+  if (u.id === 'dock') { const cur = MONSTERS.filter(m => m.dock <= lv).map(m => m.emoji).join(''); const nm = MONSTERS.find(m => m.dock === lv + 1); return cur + (nm ? `  → ${t('unlocks')}: ${nm.emoji} ${L(nm.name)}` : ''); }
+  if (u.id === 'picker') return (lv ? (BAL.pickerBaseDelay / lv).toFixed(1) + 's' : '—') + (lv < u.max ? ' → ' + (BAL.pickerBaseDelay / (lv + 1)).toFixed(1) + 's' : '');
+  if (u.id === 'brush') return `${BAL.brushBase + now}px → ${BAL.brushBase + nx}px`;
+  if (u.id === 'fridge') return `${BAL.fridgeBase + now} → ${BAL.fridgeBase + nx}`;
+  if (u.id === 'altar') return `${BAL.relicSlotsBase + now} → ${BAL.relicSlotsBase + nx}`;
+  if (u.id === 'drone') return `LV ${lv} → ${lv + 1}`;
+  return e.op === 'mul' ? `${fmtX(now)} → ${fmtX(nx)}` : `+${now} → +${nx}`;
+}
+function refreshAfford() {
+  document.querySelectorAll('#tabBody [data-cost]').forEach(b => { if (b.classList.contains('max')) return; b.classList.toggle('no', G.money < +b.dataset.cost); });
+}
+
+// ---- tooltip
+function tipHtml(key) {
+  const [kind, id] = key.split(/:(.*)/s);
+  if (kind === 'txt') return id;
+  if (kind === 'relic') { const r = RELIC_BY_ID[id]; return `<div class="tt">${r.icon} ${L(r.name)} <span class="rr ${r.rarity}">${r.rarity.toUpperCase()}</span></div>${L(r.desc)}`; }
+  if (kind === 'fridge') {
+    const it = G.fridge.find(i => i.uid === +id); if (!it) return '';
+    const p = PARTS[it.partId]; const r = salePrice(it);
+    let h = `<div class="tt">${p.icon} ${it.variant !== 'normal' ? L(VARIANTS[it.variant].name) + ' ' : ''}${L(p.name)} <span class="q${it.q}">${it.perfect ? 'S★ PERFECT' : QUALITY[it.q].label}</span></div>`;
+    h += `<div class="tl"><span>${G.lang === 'ja' ? '鮮度' : 'Freshness'}</span><b>${it.fresh.toFixed(0)}%</b></div>`;
+    for (const ln of r.lines) h += `<div class="tl"><span>${ln.label}</span><b>${ln.kind === 'base' ? money(ln.v) : fmtX(ln.v)}</b></div>`;
+    h += `<div class="tsum"><span>${G.lang === 'ja' ? 'クリックで売却' : 'CLICK TO SELL'}</span><span>${money(r.total)}</span></div>`;
+    return h;
+  }
+  return '';
+}
+
+/* ============================ 6. AUDIO ============================ */
+const Sfx = {
+  ctx: null, master: null, noise: null, creak: null, last: {},
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.master = this.ctx.createGain(); this.master.gain.value = G.sound ? .45 : 0; this.master.connect(this.ctx.destination);
+      const len = this.ctx.sampleRate; const b = this.ctx.createBuffer(1, len, this.ctx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; this.noise = b;
+    } catch (e) { this.ctx = null; }
+  },
+  setOn(on) { if (this.master) this.master.gain.value = on ? .45 : 0; },
+  ok() { return this.ctx && G.sound; },
+  thr(k, ms) { const n = performance.now(); if (this.last[k] && n - this.last[k] < ms) return false; this.last[k] = n; return true; },
+  tone(f, dur, type = 'square', vol = .15, slide = null, delay = 0) {
+    if (!this.ok()) return; const c = this.ctx, t0 = c.currentTime + delay;
+    const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + dur);
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur); o.connect(g); g.connect(this.master); o.start(t0); o.stop(t0 + dur + .02);
+  },
+  nz(dur, vol, freq, q = 1, type = 'bandpass', delay = 0) {
+    if (!this.ok()) return; const c = this.ctx, t0 = c.currentTime + delay;
+    const s = c.createBufferSource(); s.buffer = this.noise; s.playbackRate.value = rand(.8, 1.2);
+    const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = c.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    s.connect(f); f.connect(g); g.connect(this.master); s.start(t0, Math.random() * .5); s.stop(t0 + dur + .02);
+  },
+  scrape() { if (this.thr('scrape', 45)) this.nz(.07, .09, rand(1400, 3200), 2.5); },
+  crack(combo, armor) { const f = 260 + Math.min(combo, 60) * 18; this.tone(f, .06, 'triangle', .12, f * 1.6); this.nz(.05, armor ? .16 : .1, armor ? 4200 : 2200, 1, 'highpass'); },
+  expose() { this.tone(880, .12, 'sine', .14, 1320); this.tone(1320, .15, 'sine', .08, null, .06); },
+  pop() { this.tone(420, .2, 'sine', .25, 90); this.nz(.12, .2, 700, 1); },
+  tear() { this.nz(.35, .35, 900, .7, 'lowpass'); this.tone(160, .35, 'sawtooth', .2, 50); },
+  rankS() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, .22, 'square', .07, null, i * .055)); this.pop(); },
+  perfect() { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this.tone(f, .3, 'square', .07, null, i * .045)); this.tone(2093, .5, 'sine', .1, null, .28); this.pop(); },
+  cash(sz) { if (!this.thr('cash', 40)) return; this.tone(1568, .05, 'square', .09); this.tone(2093, .22, 'square', .09, null, .05); if (sz > 1) [1047, 1319, 1568, 2093].forEach((f, i) => this.tone(f, .25, 'triangle', .1, null, .1 + i * .07)); },
+  tick() { if (this.thr('tick', 30)) this.tone(2400 + rand(0, 600), .03, 'square', .03); },
+  buy() { this.tone(660, .07, 'triangle', .18, 990); this.tone(990, .1, 'triangle', .14, 1480, .06); },
+  relic() { [196, 247, 294, 392].forEach((f, i) => this.tone(f, .5, 'sawtooth', .05, null, i * .08)); },
+  bad() { this.tone(150, .25, 'sawtooth', .15, 70); },
+  news() { this.tone(988, .1, 'square', .12); this.tone(740, .18, 'square', .12, null, .12); this.tone(988, .1, 'square', .12, null, .32); },
+  rumor() { this.tone(330, .25, 'sine', .1, 660); },
+  thud() { this.tone(90, .25, 'sine', .35, 40); this.nz(.15, .15, 300, 1, 'lowpass'); },
+  creakStart() { if (!this.ok() || this.creak) return; const c = this.ctx; const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = 70; f.type = 'bandpass'; f.frequency.value = 600; f.Q.value = 4; g.gain.value = 0; o.connect(f); f.connect(g); g.connect(this.master); o.start(); this.creak = { o, g, f }; },
+  creakSet(stress, k) { if (!this.creak) return; const n = this.ctx.currentTime; this.creak.o.frequency.setTargetAtTime(60 + stress * 2.2 + k * 40, n, .03); this.creak.f.frequency.setTargetAtTime(400 + stress * 18, n, .03); this.creak.g.gain.setTargetAtTime(.04 + stress / 100 * .14, n, .03); },
+  creakStop() { if (!this.creak) return; const { o, g } = this.creak; g.gain.setTargetAtTime(0, this.ctx.currentTime, .02); o.stop(this.ctx.currentTime + .1); this.creak = null; },
+};
+
+/* ============================ 7. INPUT / LOOP / SAVE ============================ */
+function showGhost(item) {
+  const gh = $('#ghost'); const p = PARTS[item.partId];
+  gh.querySelector('.gi').textContent = p.icon;
+  const q = gh.querySelector('.gq'); q.textContent = item.perfect ? 'S★' : QUALITY[item.q].label; q.style.color = QUALITY[item.q].color;
+  gh.querySelector('.gl').textContent = money(salePrice(item).total);
+  gh.style.filter = item.variant !== 'normal' ? `drop-shadow(0 0 12px ${VARIANTS[item.variant].color}) drop-shadow(0 6px 10px #000)` : '';
+  gh.style.display = 'block'; moveGhost();
+}
+function moveGhost() { const gh = $('#ghost'); gh.style.left = T.ptr.cx + 'px'; gh.style.top = T.ptr.cy + 'px'; }
+function dropZoneAt(x, y) { const el = document.elementFromPoint(x, y); if (!el) return null; if (el.closest('#quickSell')) return 'quick'; if (el.closest('#fridgeZone')) return 'fridge'; return null; }
+function dropHeld() {
+  const item = T.held; T.held = null; $('#ghost').style.display = 'none';
+  $('#quickSell').classList.remove('hot'); $('#fridgeZone').classList.remove('hot');
+  const z = dropZoneAt(T.ptr.cx, T.ptr.cy); const xy = [T.ptr.cx, T.ptr.cy];
+  if (z === 'quick') sellItems([item], { quick: true }, xy);
+  else storeItem(item, xy);
+}
+
+function setupInput() {
+  const cv = T.cv;
+  const upd = e => { const r = cv.getBoundingClientRect(); T.ptr.x = e.clientX - r.left; T.ptr.y = e.clientY - r.top; T.ptr.cx = e.clientX; T.ptr.cy = e.clientY; T.ptr.inside = T.ptr.x >= 0 && T.ptr.y >= 0 && T.ptr.x <= r.width && T.ptr.y <= r.height; };
+  cv.addEventListener('pointerdown', e => {
+    Sfx.init(); upd(e); T.ptr.px = T.ptr.x; T.ptr.py = T.ptr.y; T.ptr.down = true; e.preventDefault();
+    if (T.held) return;
+    const hp = hoverPart(); if (hp) startPull(hp);
+  });
+  window.addEventListener('pointermove', e => {
+    upd(e);
+    if (T.held) { moveGhost(); const z = dropZoneAt(e.clientX, e.clientY); $('#quickSell').classList.toggle('hot', z === 'quick'); $('#fridgeZone').classList.toggle('hot', z === 'fridge'); }
+    const tip = $('#tip'); if (tip.style.display === 'block') { tip.style.left = Math.min(innerWidth - 300, e.clientX + 14) + 'px'; tip.style.top = Math.min(innerHeight - tip.offsetHeight - 8, e.clientY + 14) + 'px'; }
+  });
+  window.addEventListener('pointerup', e => {
+    upd(e); T.ptr.down = false;
+    if (T.pull) cancelPull();
+    if (T.held) dropHeld();
+  });
+  cv.addEventListener('pointerleave', () => { T.ptr.inside = false; });
+  window.addEventListener('blur', () => { T.ptr.down = false; if (T.pull) cancelPull(); if (T.held) dropHeld(); });
+
+  $('#haulBtn').addEventListener('click', () => { Sfx.init(); haulOut(); });
+  $('#fridgeGrid').addEventListener('click', e => { const el = e.target.closest('.fitem'); if (!el) return; Sfx.init(); const it = G.fridge.find(i => i.uid === +el.dataset.uid); if (it) { hideTip(); sellItems([it], {}, centerOf(el)); } });
+  $('#btnSort').addEventListener('click', () => { G.fridge.sort((a, b) => salePrice(b).total - salePrice(a).total); renderFridge(); });
+  $('#btnSellRot').addEventListener('click', () => { Sfx.init(); sellItems(G.fridge.filter(i => i.fresh <= 0), {}, centerOf($('#fridgeZone'))); });
+  $('#btnSellAll').addEventListener('click', () => { Sfx.init(); const by = {}; for (const it of G.fridge) (by[it.partId] = by[it.partId] || []).push(it); for (const k in by) sellItems(by[k], { bulk: by[k].length }, centerOf($('#fridgeZone'))); });
+  $('#mktList').addEventListener('click', e => {
+    const s = e.target.closest('[data-sell]');
+    if (s) { Sfx.init(); const items = G.fridge.filter(i => i.partId === s.dataset.sell); sellItems(items, { bulk: items.length }, centerOf(s)); return; }
+    const row = e.target.closest('.mrow'); if (row) { selPart = row.dataset.part; refreshMarketRows(); drawChart(); }
+  });
+  $('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; curTab = b.dataset.tab; renderTab(); });
+  $('#tabBody').addEventListener('click', e => {
+    Sfx.init(); const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.up) buyUpgrade(b.dataset.up);
+    else if (b.dataset.relic) buyRelic(b.dataset.relic);
+    else if (b.dataset.rsell) sellRelic(b.dataset.rsell);
+    else if (b.dataset.reroll) { const c = rerollPrice(); if (G.money < c) { Sfx.bad(); return; } G.money -= c; G.shop.rerolls++; rollShop(); Sfx.buy(); renderTab(); }
+    else if (b.dataset.deliver) deliverOrder(+b.dataset.deliver);
+    else if (b.dataset.odrop) { G.orders = G.orders.filter(o => o.id !== +b.dataset.odrop); G.orders.push(genOrder()); renderTab(); }
+  });
+  document.addEventListener('pointerover', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el) { const h = tipHtml(el.dataset.tip); if (h) { const tip = $('#tip'); tip.innerHTML = h; tip.style.display = 'block'; } } else hideTip(); });
+  $('#btnLang').addEventListener('click', () => { G.lang = G.lang === 'en' ? 'ja' : 'en'; applyLang(); });
+  $('#btnSound').addEventListener('click', () => { G.sound = !G.sound; Sfx.init(); Sfx.setOn(G.sound); $('#btnSound').textContent = G.sound ? '🔊' : '🔇'; });
+  $('#btnDev').addEventListener('click', () => $('#dev').classList.toggle('show'));
+  $('#btnHelp').addEventListener('click', () => { renderHelp(); $('#help').classList.add('show'); });
+  $('#help').addEventListener('click', () => $('#help').classList.remove('show'));
+  $('#dev').addEventListener('click', e => {
+    const k = e.target.dataset.dev; if (!k) return;
+    if (k === 'money') { addMoney(Math.max(G.money * 9, 1000)); }
+    if (k === 'dock' && (G.up.dock || 0) < 7) { G.up.dock = (G.up.dock || 0) + 1; recomputeStats(); buildMarketList(); T.forceNext = MONSTERS.find(m => m.dock === ST.dock).id; }
+    if (k === 'news') { NEWS_RT.next = 0.01; if (!NEWS_RT.pending) NEWS_RT.pending = pickNews(); }
+    if (k === 'variant') T.forceVariant = true;
+    if (k === 'relic') grantRandomRelic(centerOf($('#relicSlots')), 0);
+    if (k === 'fill') { const ups = unlockedParts(); while (G.fridge.length < ST.fridgeSlots) G.fridge.push(makeItem(pick(ups), 'normal', pick(['S', 'A', 'B']), false)); renderFridge(); refreshMarketRows(); }
+    if (k.startsWith('ts')) timeScale = +k.slice(2);
+    if (k === 'reset') { if (confirm('Wipe save and restart?')) { try { localStorage.removeItem(SAVE_KEY); } catch (_) { } G = defaultState(); wiped = true; location.reload(); } }
+    renderToolStats(); renderTab(); renderRelicSlots();
+  });
+  window.addEventListener('resize', () => { resizeTable(); drawChart(); });
+  window.addEventListener('keydown', e => { if (e.key === '`') $('#dev').classList.toggle('show'); if (e.key === ' ' && e.target === document.body) { e.preventDefault(); haulOut(); } });
+}
+function hideTip() { $('#tip').style.display = 'none'; }
+function applyLang() {
+  document.documentElement.lang = G.lang;
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
+  $('#btnLang').textContent = G.lang === 'en' ? '日本語' : 'English';
+  $('#btnHelp').textContent = G.lang === 'en' ? '? HOW TO' : '? 遊び方';
+  renderMonTag(); renderToolStats(); buildMarketList(); renderTab(); updateTicker(); renderHelp();
+}
+function renderHelp() {
+  const en = `<h2>HOW TO RUN A DUNGEON SCRAPYARD</h2><ol>
+<li><b>Scrape:</b> hold the mouse and scrub across the monster to strip its plates. Faster strokes = more damage. Chain plate breaks for a <b>COMBO</b> (scrap cash ×).</li>
+<li><b>Extract:</b> when a part glows, grab it and pull it out past the dotted ring. Watch the <b>SPEED</b> gauge: stay in the green. Yanking builds tendon stress → S / A / B / <span class="qX">TORN</span>. Pull steadily <i>and</i> quickly for <b>PERFECT</b>.</li>
+<li><b>Don't nick:</b> scraping over an exposed part damages it before you even pull.</li>
+<li><b>Store or Fence:</b> drop the part into <b>Cold Storage</b> (sell later) or the <b>Fence</b> (sell now). Organs rot fast; stones and bones keep.</li>
+<li><b>Trade:</b> prices drift every tick. <b>Breaking news</b> can send a category ×2–×5 (or crash it). Hoard, wait, dump.</li>
+<li><b>Inflate:</b> buy tools & facilities, unlock bigger monsters at the Loading Dock, equip <b>Dark Relics</b> whose effects multiply together. Fill the Codex for a global bonus. Guild Orders pay big and may give relics.</li></ol>
+<p style="color:var(--mute)">Space = haul out · \` = dev/balance panel · progress autosaves locally. Click anywhere to close.</p>`;
+  const ja = `<h2>ダンジョン解体屋の流儀</h2><ol>
+<li><b>剥がす：</b>マウスを押したままモンスターの上をこすって外皮を剥がす。速くこするほど高ダメージ。連続破壊で<b>コンボ</b>（スクラップ収入↑）。</li>
+<li><b>引き抜く：</b>光ったパーツを掴み、点線の円の外まで引き抜く。<b>速度ゲージ</b>を緑に保て。急ぐと腱ストレスが溜まり S / A / B / <span class="qX">千切れ</span> に。一定速度で素早く抜けば <b>PERFECT</b>。</li>
+<li><b>傷に注意：</b>露出したパーツの上を削ると、抜く前から品質が落ちる。</li>
+<li><b>保管か即売か：</b>パーツを<b>保管庫</b>（後で売る）か<b>故買屋</b>（今すぐ売る）へドロップ。臓器はすぐ腐る、石や骨は長持ち。</li>
+<li><b>相場：</b>価格は常に変動。<b>速報ニュース</b>でカテゴリが×2〜×5に高騰（または暴落）。寝かせて、待って、売り抜けろ。</li>
+<li><b>インフレ：</b>ツール・設備を強化し、搬入ライセンスで大型モンスターを解禁。<b>闇の遺物</b>の効果は掛け算で重なる。図鑑を埋めると全体ボーナス。ギルド依頼は高報酬＆遺物も。</li></ol>
+<p style="color:var(--mute)">Space＝搬出 ・ \`＝開発／バランス調整パネル ・ 自動セーブ。クリックで閉じる。</p>`;
+  $('#helpBox').innerHTML = G.lang === 'ja' ? ja : en;
+}
+
+let wiped = false;
+function save() { if (wiped) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (_) { } }
+function load() {
+  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const d = JSON.parse(raw); const def = defaultState(); G = Object.assign(def, d); G.stats = Object.assign(def.stats, d.stats || {}); G.shop = Object.assign(def.shop, d.shop || {}); return true; } } catch (_) { }
+  return false;
+}
+
+let last = performance.now(), uiT = 0, slowT = 0, mktT = 0, saveT = 0, dispMoney = 0;
+function frame(now) {
+  const rawDt = Math.min(0.05, (now - last) / 1000); last = now; const dt = rawDt * timeScale;
+  updateTable(rawDt);            // table always real-time for feel
+  updateFreshness(dt);
+  updateNews(dt);
+  updateOrders(dt);
+  if (T.hurtT > 0) T.hurtT -= rawDt;
+  mktT += dt; if (mktT >= BAL.marketTick) { mktT -= BAL.marketTick; tickMarket(); }
+  renderTable();
+  // header (every frame, cheap)
+  dispMoney = dispMoney + (G.money - dispMoney) * Math.min(1, rawDt * 12); if (Math.abs(G.money - dispMoney) < .01) dispMoney = G.money;
+  setText('#hMoney', money(dispMoney));
+  uiT += rawDt; if (uiT > .2) {
+    uiT = 0; renderHud(); refreshAfford(); renderActiveNews();
+    const n = performance.now(); while (incomeLog.length && n - incomeLog[0][0] > 60000) incomeLog.shift();
+    setText('#hPerMin', money(incomeLog.reduce((a, b) => a + b[1], 0))); setText('#hLife', money(G.lifetime)); setText('#hGlobal', fmtX(globalMult()));
+    $('#mktClock').textContent = new Date().toLocaleTimeString();
+    $('#devInfo').textContent = `sales ${G.sales} · S ${G.stats.sCount} · perf ${G.stats.perfect} · broke ${G.stats.broken} · bodies ${G.stats.monsters} · ledger ${fmtX(G.ledger)}`;
+  }
+  slowT += rawDt; if (slowT > .5) { slowT = 0; refreshFridgePrices(); if (tabsDirty && curTab === 'orders') renderTab(); if (curTab === 'orders') document.querySelectorAll('#tabBody .otime').forEach((el, i) => { const o = G.orders[i]; if (o) el.style.width = (o.t / o.max * 100) + '%'; }); }
+  saveT += rawDt; if (saveT > BAL.autosaveSec) { saveT = 0; save(); }
+  requestAnimationFrame(frame);
+}
+function setText(sel, v) { const el = $(sel); if (el.textContent !== v) el.textContent = v; }
+
+function boot() {
+  load(); recomputeStats(); initMarket();
+  if (!G.orders.length) for (let i = 0; i < BAL.orderCount; i++) G.orders.push(genOrder());
+  if (!G.shop.offers.length) rollShop();
+  dispMoney = G.money;
+  T.cv = $('#tableCv'); T.ctx = T.cv.getContext('2d');
+  resizeTable(); setupInput(); applyLang();
+  $('#btnSound').textContent = G.sound ? '🔊' : '🔇';
+  renderRelicSlots(); renderFridge(); renderToolStats();
+  spawnMonster();
+  if (!G.lifetime) setTimeout(() => { renderHelp(); $('#help').classList.add('show'); }, 300);
+  window.addEventListener('beforeunload', save);
+  requestAnimationFrame(t0 => { last = t0; requestAnimationFrame(frame); });
+}
+boot();
+</script>
+</body>
+</html>
